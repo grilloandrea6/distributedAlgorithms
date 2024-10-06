@@ -1,5 +1,7 @@
 package cs451;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -57,16 +59,52 @@ public class Main {
         System.out.println(parser.config() + "\n");
 
         System.out.println("Doing some initialization\n");
+
+        int nMessages;
+        int deliveryHost;
+        OutputLogger outputLogger = new OutputLogger(parser.output());
+
+        System.out.println("Reading config file...");
+        System.out.println("I am host " + parser.myId() + ".");
         try {
-            NetworkInterface networkInterface = new NetworkInterface(parser);
-            networkInterface.addPacket(123, 0);
-        } catch (SocketException e) {
-            System.err.println("Error creating NetworkInterface: " + e.getMessage());
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            BufferedReader configReader = new BufferedReader(new FileReader(parser.config()));
+            String config[] = configReader.readLine().split("\\s");
+            nMessages = Integer.parseInt(config[0]);
+            deliveryHost = Integer.parseInt(config[1]);
+            configReader.close();
+            if(deliveryHost != parser.myId()) {
+                System.out.println("I will send " + nMessages + " messages to host " + deliveryHost + ".");
+            } else {
+                System.out.println("I expect to deliver " + nMessages + " messages from all other hosts.");
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading config file: " + e.getMessage());
+            return;
         }
 
-        System.out.println("Broadcasting and delivering messages...\n");
+        try {
+            NetworkInterface.begin(parser);
+        } catch (SocketException e) {
+            System.err.println("Error creating NetworkInterface: " + e.getMessage());
+            return;
+        }
+
+        System.out.println("\nBroadcasting and delivering messages...\n");
+
+        if(deliveryHost != parser.myId()) {
+            PerfectLinksSender perfectLinksSender = new PerfectLinksSender(parser, outputLogger);
+            for (int i = 0; i < nMessages; i++) {
+                System.out.println("Main - Sending message " + i + " to host " + deliveryHost);
+                byte data[] = NetworkInterface.intToBytes(i);
+
+                perfectLinksSender.perfectSend(data, deliveryHost);
+            }
+        } else {
+            PerfectLinksReceiver perfectLinksReceiver = new PerfectLinksReceiver(parser, outputLogger);
+            perfectLinksReceiver.start();
+        }
+
+        
 
         // new java.util.Timer().schedule(new TimerTask(){
         //     @Override
@@ -88,13 +126,13 @@ public class Main {
         // ackKeeper.addAck(9);
         // ackKeeper.addAck(8);
        
-        System.out.println(Long.BYTES);
+        //System.out.println(Long.BYTES);
 
         // After a process finishes broadcasting,
         // it waits forever for the delivery of messages.
-        while (true) {
-            // Sleep for 1 hour
-            Thread.sleep(60 * 60 * 1000);
-        }
+        // while (true) {
+        //     // Sleep for 1 hour
+        //     Thread.sleep(60 * 60 * 1000);
+        // }
     }
 }
