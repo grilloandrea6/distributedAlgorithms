@@ -1,46 +1,54 @@
 package cs451;
 
-import java.util.List;
-import java.util.LinkedList;
+import java.util.Set;
+import java.util.HashSet;
 
 public class AckKeeper {
-    private int maxAck;
-    private List<Integer> acks;
+    private static final int MAXIMUM_ACK_SIZE = 20; // ToDo tune value
+
+    private int maximumInOrderAck;
+    private Set<Integer> acks;
+    private Set<Integer> nacks;
 
     public AckKeeper() {
-        this.maxAck = 0;
-        this.acks = new LinkedList<>();
+        this.maximumInOrderAck = -1;
+        this.acks = new HashSet<>();
+        this.nacks = new HashSet<>();
     }
 
     public void addAck(int ack) {
-        System.out.println("Received ack: " + ack);
-        if (ack == this.maxAck + 1) {
-            System.out.println("Ack is in order, just incrementing maxAck");
-            this.maxAck++;
+        if(nacks.contains(ack)) {
+            nacks.remove(ack);
+        } else if (ack == this.maximumInOrderAck + 1) {
+            this.maximumInOrderAck++;
             removeAcks();
+        } else if(acks.size() >= MAXIMUM_ACK_SIZE) {
+            this.nacks.add(++this.maximumInOrderAck);
+            removeAcks();
+            addAck(ack);
         } else {
-            System.out.println("Ack is not in order, adding to list");
             this.acks.add(ack);
         }
-        System.out.println("Current maxAck: " + this.maxAck + "\n\n\n");
     }
 
     private void removeAcks() {
-        System.out.println("Removing acks");
-        this.acks.forEach(ack -> {
-            if (ack == this.maxAck + 1) {
-                this.maxAck++;
+        for (int ack : acks) {
+            if (ack == this.maximumInOrderAck + 1) {
+                this.maximumInOrderAck++;
                 this.acks.remove(ack);
                 removeAcks();
                 return;
             }
-        });
+        }
     }
 
     public boolean isAcked(int ack) {
-        if(ack >= this.maxAck) {
+        if(nacks.contains(ack))
+            return false;
+        
+        if(ack <= this.maximumInOrderAck)
             return true;
-        }
+        
         return this.acks.contains(ack);
     }
 }
