@@ -1,16 +1,35 @@
 package cs451;
 
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.Map;
+
 public class PerfectLinksReceiver {
+    
+    static private Map<Integer, AckKeeper> ackKeeperMap = new HashMap<>();
 
-    public PerfectLinksReceiver(Parser parser, OutputLogger outputLogger) {
-        //TODO Auto-generated constructor stub
-        System.out.println("PerfectLinksReceiver constructor called");
+    public static void receivedPacket(Packet packet) {
+        System.out.println("PerfectLinksReceiver receivedPacket called");
+
+        System.out.println("Data: " + ByteBuffer.wrap(packet.getData()).getInt());
+
+        int senderId = packet.getSenderID();
+
+        if(!ackKeeperMap.containsKey(senderId))
+            ackKeeperMap.put(senderId, new AckKeeper());
+
+        AckKeeper ackKeeper = ackKeeperMap.get(senderId);
+
+        if(ackKeeper.isAcked(packet.getId())) {
+            System.out.println("Already acked");
+        } else {
+            System.out.println("Not acked");
+            ackKeeper.addAck(packet.getId());
+            OutputLogger.logDeliver(packet.getSenderID(), packet.getData());
+        }
+
+        Packet ackPacket = Packet.createAckPacket(packet);
+
+        NetworkInterface.sendPacket(ackPacket);
     }
-
-    public void start() {
-        System.out.println("PerfectLinksReceiver start called");
-        // TODO Auto-generated method stub
-        //throw new UnsupportedOperationException("Unimplemented method 'start'");
-    }
-
 }

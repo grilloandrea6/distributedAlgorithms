@@ -11,12 +11,20 @@ import java.util.TimerTask;
 
 public class Main {
 
+    public static boolean running = true;
+
     private static void handleSignal() {
         //immediately stop network packet processing
         System.out.println("Immediately stopping network packet processing.");
+        running = false;
 
         //write/flush output file if necessary
         System.out.println("Writing output.");
+        try {
+            OutputLogger.end();
+        } catch (IOException e) {
+            System.err.println("Error closing output file: " + e.getMessage());
+        }
     }
 
     private static void initSignalHandlers() {
@@ -62,7 +70,12 @@ public class Main {
 
         int nMessages;
         int deliveryHost;
-        OutputLogger outputLogger = new OutputLogger(parser.output());
+        try {
+            OutputLogger.begin(parser);
+        } catch (IOException e) {
+            System.err.println("Error opening output file: " + e.getMessage());
+            return;
+        }
 
         System.out.println("Reading config file...");
         System.out.println("I am host " + parser.myId() + ".");
@@ -83,27 +96,25 @@ public class Main {
         }
 
         try {
-            NetworkInterface.begin(parser);
+            NetworkInterface.begin(parser, deliveryHost != parser.myId());
         } catch (SocketException e) {
-            System.err.println("Error creating NetworkInterface: " + e.getMessage());
+            System.err.println("Error starting NetworkInterface: " + e.getMessage());
             return;
         }
 
         System.out.println("\nBroadcasting and delivering messages...\n");
 
         if(deliveryHost != parser.myId()) {
-            PerfectLinksSender perfectLinksSender = new PerfectLinksSender(parser, outputLogger);
+            PerfectLinksSender.begin(parser);
             for (int i = 0; i < nMessages; i++) {
                 System.out.println("Main - Sending message " + i + " to host " + deliveryHost);
                 byte data[] = NetworkInterface.intToBytes(i);
 
-                perfectLinksSender.perfectSend(data, deliveryHost);
+                PerfectLinksSender.perfectSend(data, deliveryHost);
             }
-        } else {
-            PerfectLinksReceiver perfectLinksReceiver = new PerfectLinksReceiver(parser, outputLogger);
-            perfectLinksReceiver.start();
         }
 
+        System.out.println("Main - Finished broadcasting and delivering messages.");
         
 
         // new java.util.Timer().schedule(new TimerTask(){
@@ -117,14 +128,19 @@ public class Main {
         // AckKeeper ackKeeper = new AckKeeper();
         // ackKeeper.addAck(1);
         // ackKeeper.addAck(2);
-        // ackKeeper.addAck(3);
+        
         // ackKeeper.addAck(4);
-        // ackKeeper.addAck(6);
         // ackKeeper.addAck(5);
+        // ackKeeper.addAck(6);
         // ackKeeper.addAck(7);
-        // ackKeeper.addAck(10);
-        // ackKeeper.addAck(9);
         // ackKeeper.addAck(8);
+        // ackKeeper.addAck(9);
+        // ackKeeper.addAck(10);
+        // ackKeeper.addAck(3);
+        // for (int i = 250; i < 300; i++) {
+        //     ackKeeper.addAck(i);
+        // }
+        
        
         //System.out.println(Long.BYTES);
 
