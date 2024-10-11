@@ -10,7 +10,7 @@ public class Packet {
 
     static private int idCounter = 0;
 
-    static private final Long INITIAL_TIMEOUT = 1000L;
+    static private final Long INITIAL_TIMEOUT = 100L;
 
     private boolean isAckPacket;
 
@@ -36,6 +36,7 @@ public class Packet {
     }
 
     public void backoff() {
+        System.out.println("Backoff called - interval: " + interval);
         interval *= 2;
         timeout = System.currentTimeMillis() + interval;
     }
@@ -66,47 +67,68 @@ public class Packet {
         return targetID;
     }
 
-    public byte[] serialize() { //TODO check if something can be removed
-        // Determine the size of the final byte array based on the sizes of all fields
+    public byte[] serialize() {
         int dataLength = data != null ? data.length : 0;
         
         // Allocate ByteBuffer to hold all the fields
-        ByteBuffer buffer = ByteBuffer.allocate(4 + 4 + dataLength + 1 + 4 + 4 + 8 + 8);
+        ByteBuffer buffer = ByteBuffer.allocate(13 + dataLength);
 
-        // Serialize the fields
-        buffer.putInt(targetID);                      // 4 bytes
+        // Serialize fields
+        buffer.putInt(id);                            // 4 bytes
+        buffer.putInt(senderID);                      // 4 bytes
+        buffer.put((byte) (isAckPacket ? 1 : 0));     // 1 byte for boolean
         buffer.putInt(dataLength);                    // 4 bytes for data length
         if (dataLength > 0) {
             buffer.put(data);                         // variable size
         }
-        buffer.put((byte) (isAckPacket ? 1 : 0));     // 1 byte for boolean
-        buffer.putInt(id);                            // 4 bytes
-        buffer.putInt(senderID);                      // 4 bytes
-        buffer.putLong(interval != null ? interval : 0L);   // 8 bytes
-        buffer.putLong(timeout != null ? timeout : 0L);     // 8 bytes
-
+        
         return buffer.array(); // Get the final byte array
     }
 
-    public static Packet deserialize(byte[] byteArray) {
-        ByteBuffer buffer = ByteBuffer.wrap(byteArray);
-        
-        Packet packet = new Packet();
-        
-        // Deserialize fields
-        packet.targetID = buffer.getInt();                   // 4 bytes
-        int dataLength = buffer.getInt();                    // 4 bytes
-        if (dataLength > 0) {
-            packet.data = new byte[dataLength];
-            buffer.get(packet.data, 0, dataLength);          // variable size
-        }
-        packet.isAckPacket = buffer.get() == 1;              // 1 byte for boolean
-        packet.id = buffer.getInt();                         // 4 bytes
-        packet.senderID = buffer.getInt();                   // 4 bytes
-        packet.interval = buffer.getLong();                  // 8 bytes
-        packet.timeout = buffer.getLong();                   // 8 bytes
+    public static Packet deserialize(byte[] byteArray, int length) {
+        System.out.println("Deserializing packet");
+        try{
+            if(length < 13) {
+                throw new Exception("Invalid packet size");
+            }
 
+            ByteBuffer buffer = ByteBuffer.wrap(byteArray);
+            
+            Packet packet = new Packet();
+            
+            // Deserialize fields
+            packet.id = buffer.getInt();                         // 4 bytes
+            packet.senderID = buffer.getInt();                   // 4 bytes
+            packet.isAckPacket = buffer.get() == 1;              // 1 byte for boolean
+            int dataLength = buffer.getInt();                    // 4 bytes
+            if (dataLength > 0) {
+                packet.data = new byte[dataLength];
+                buffer.get(packet.data, 0, dataLength);          // variable size
+            }
+            
+            return packet;
+
+        } catch (Exception e) {
+            System.out.println("Failed to deserialize packet.");
+            return null;
+        }
+        
+    }
+
+    public static Packet createAckPacket(Packet p) {
+        Packet packet = new Packet();
+        packet.isAckPacket = true;
+        packet.data = ByteBuffer.allocate(4).putInt(p.id).array();
+        packet.targetID = p.senderID;
         return packet;
+    }
+
+    public byte[] getData() {
+        return data;
+    }
+
+    public int getSenderID() {
+        return senderID;
     }
 
 }
