@@ -16,8 +16,8 @@ public class Main {
 
     private static void handleSignal() {
         //immediately stop network packet processing
-        System.out.println("Immediately stopping network packet processing.");
         running = false;
+        System.out.println("Immediately stopping network packet processing.");
 
         //write/flush output file if necessary
         System.out.println("Writing output.");
@@ -113,43 +113,16 @@ public class Main {
 
                 PerfectLinksSender.perfectSend(data, deliveryHost);
             }
+            System.out.println("Main - Finished broadcasting messages.");
         }
 
-        System.out.println("Main - Finished broadcasting and delivering messages.");
-        
-
-        // new java.util.Timer().schedule(new TimerTask(){
-        //     @Override
-        //     public void run() {
-        //         System.out.println("Executed...");
-        //        //your code here 
-        //        //1000*5=5000 millisec. i.e. 5 seconds. you can change accordingly 
-        //     }
-        // },1000*5,500); 
-        // AckKeeper ackKeeper = new AckKeeper();
-        // ackKeeper.addAck(1);
-        // ackKeeper.addAck(2);
-        
-        // ackKeeper.addAck(4);
-        // ackKeeper.addAck(5);
-        // ackKeeper.addAck(6);
-        // ackKeeper.addAck(7);
-        // ackKeeper.addAck(8);
-        // ackKeeper.addAck(9);
-        // ackKeeper.addAck(10);
-        // ackKeeper.addAck(3);
-        // for (int i = 250; i < 300; i++) {
-        //     ackKeeper.addAck(i);
-        // }
         
        
-        //System.out.println(Long.BYTES);
-
         // After a process finishes broadcasting,
         // it waits forever for the delivery of messages.
-        // while (true) {
-        //     // Sleep for 1 hour
-        //     Thread.sleep(60 * 60 * 1000);
-        // }
+        while (true) {
+            // Sleep for 1 hour
+            Thread.sleep(60 * 60 * 1000);
+        }
     }
 }

@@ -15,15 +15,16 @@ public class OutputLogger {
     public static void logDeliver(int senderId, List<Byte> data) {
         synchronized (writer) {
             try {
-                //System.out.println("should deliver lenght " + data.size());
-                while(!data.isEmpty()) {
-                    data.remove(0);
-                    writer.write("d " + senderId + " " + NetworkInterface.bytesToInt(data));
-                    writer.newLine();
-                    data.remove(0);
-                    data.remove(0);
-                    data.remove(0);
-                    data.remove(0);
+                if(Main.running) {
+                    while(!data.isEmpty()) {
+                        data.remove(0);
+                        writer.write("d " + senderId + " " + NetworkInterface.bytesToInt(data));
+                        writer.newLine();
+                        data.remove(0);
+                        data.remove(0);
+                        data.remove(0);
+                        data.remove(0);
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -34,8 +35,10 @@ public class OutputLogger {
     public static void logBroadcast(List<Byte> data) {
         synchronized (writer) {
             try {
-                writer.write("b " + NetworkInterface.bytesToInt(data));
-                writer.newLine();
+                if(Main.running) {
+                    writer.write("b " + NetworkInterface.bytesToInt(data));
+                    writer.newLine();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -45,6 +48,7 @@ public class OutputLogger {
     public static void end() throws IOException {
         synchronized (writer) {
             System.out.println("OutputLogger closing file");
+            writer.flush();
             writer.close();
         }
     }

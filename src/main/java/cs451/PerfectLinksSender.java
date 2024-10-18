@@ -65,7 +65,7 @@ public class PerfectLinksSender {
 
     private static void retransmitThread() {
         System.out.println("PerfectLinksSender retransmitThread started");
-        while (Main.running) { // ToDo if it is okay to stop this way
+        while (Main.running) {
             try {
                 Packet packet = waitingForAck.take();
                 
