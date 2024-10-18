@@ -5,8 +5,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 // TODO: i don't think the sender thread is needed
 // have one thread that receives packets and adds them to a blocking queue? or have a reference to a upper layer to deliver them
@@ -65,11 +66,30 @@ public class NetworkInterface {
         } 
     }
 
-    public static final byte[] intToBytes(int value) {
-        return ByteBuffer.allocate(4).putInt(value).array();
+    public static final List<Byte> intToBytes(int number) {
+        List<Byte> byteList = new ArrayList<>(4);
+
+        // Extract bytes from int
+        byteList.add((byte) ((number >> 24) & 0xFF)); // Most significant byte
+        byteList.add((byte) ((number >> 16) & 0xFF));
+        byteList.add((byte) ((number >> 8) & 0xFF));
+        byteList.add((byte) (number & 0xFF));          // Least significant byte
+
+        return byteList;    
     }
 
-    public static final int bytesToInt(byte[] bytes) {
-        return ByteBuffer.wrap(bytes).getInt();
+    public static final int bytesToInt(List<Byte> byteList) {
+        if (byteList == null || byteList.size() < 4) {
+            throw new IllegalArgumentException("The list must contain at least 4 bytes.");
+        }
+
+        // Combine the bytes back into an int
+        int result = 0;
+        result |= (byteList.get(0) & 0xFF) << 24; // Most significant byte
+        result |= (byteList.get(1) & 0xFF) << 16;
+        result |= (byteList.get(2) & 0xFF) << 8;
+        result |= (byteList.get(3) & 0xFF);       // Least significant byte
+
+        return result;
     }
 }

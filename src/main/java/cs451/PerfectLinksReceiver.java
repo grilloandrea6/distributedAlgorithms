@@ -1,6 +1,5 @@
 package cs451;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,8 +9,6 @@ public class PerfectLinksReceiver {
 
     public static void receivedPacket(Packet packet) {
         System.out.println("PerfectLinksReceiver receivedPacket called");
-
-        System.out.println("Data: " + ByteBuffer.wrap(packet.getData()).getInt());
 
         int senderId = packet.getSenderID();
 

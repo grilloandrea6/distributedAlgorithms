@@ -1,8 +1,12 @@
 package cs451;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 
 public class PerfectLinksSender {
     static Parser parser;
@@ -10,6 +14,10 @@ public class PerfectLinksSender {
     private static Integer windowSize = 0;
 
     public final static int WINDOW_MAX_SIZE = 5; 
+
+    private static Packet currentPacket = null;
+
+    private static Lock lock = new ReentrantLock();
 
     private static PriorityBlockingQueue<Packet> waitingForAck = new PriorityBlockingQueue<Packet>(WINDOW_MAX_SIZE, (p1, p2) -> p1.getTimeout().compareTo(p2.getTimeout()));
 
@@ -19,6 +27,40 @@ public class PerfectLinksSender {
         System.out.println("PerfectLinksSender constructor called");
 
         new Thread(PerfectLinksSender::retransmitThread).start();
+
+        sendTimer();
+    }
+
+    private static void sendTimer() {
+        // Create a new Timer instance
+        Timer timer = new Timer();
+
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                lock.lock();
+                try {
+                    if(currentPacket == null) return;
+                    
+                    if(currentPacket.getCreationTime() < System.currentTimeMillis() - 100) { // ToDo parametrize
+                        internalSend(currentPacket);
+                        // System.out.println("Timer - sending packet with id: " + currentPacket.getId());
+                        currentPacket = null;
+                    }
+                }
+                finally {
+                    lock.unlock();
+                }
+                
+            }
+        };
+
+        int delay = 500;       // Initial delay (in milliseconds)
+        int period = 500;   // Time between executions (in milliseconds) => 5 seconds
+
+        // Schedule the task to run every 'period' milliseconds after an initial delay
+        timer.scheduleAtFixedRate(task, delay, period);
+
     }
 
     private static void retransmitThread() {
@@ -65,8 +107,28 @@ public class PerfectLinksSender {
 
 
 
-    public static void perfectSend(byte[] data, int deliveryHost) throws InterruptedException {
-        // todo serialize multiple send in the same packet
+    public static void perfectSend(List<Byte> data, int deliveryHost) throws InterruptedException {        
+        lock.lock();
+        try {
+
+            if(currentPacket == null) { // if null i just create a new packet with data
+                currentPacket = new Packet(data, parser.myId(), deliveryHost);
+            } else if(currentPacket.spaceAvailable(data.size())) { // if existing and I can add to it, just add
+                currentPacket.addData(data);
+            } else { // if existing and full, send it and create a new one - this could block if windows is full
+                //System.out.println("packet full - sending and creating new");
+                internalSend(currentPacket);
+                currentPacket = new Packet(data, parser.myId(), deliveryHost);
+            }
+            OutputLogger.logBroadcast(data);
+        }
+        finally {
+            lock.unlock();
+        }
+        
+    }
+
+    private static void internalSend(Packet packet) {
         synchronized(PerfectLinksSender.class) {
             while(windowSize >= WINDOW_MAX_SIZE) {
                 try {
@@ -80,10 +142,9 @@ public class PerfectLinksSender {
             windowSize++;
         }
 
-        Packet packet = new Packet(data, parser.myId(), deliveryHost);
         NetworkInterface.sendPacket(packet);
-        waitingForAck.put(packet); 
-        OutputLogger.logBroadcast(data);
+        packet.setTimeout();
+        waitingForAck.put(packet);
     }
 
 }

@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.List;
 import java.util.TimerTask;
 
 public class Main {
@@ -108,7 +109,7 @@ public class Main {
             PerfectLinksSender.begin(parser);
             for (int i = 0; i < nMessages; i++) {
                 System.out.println("Main - Sending message " + i + " to host " + deliveryHost);
-                byte data[] = NetworkInterface.intToBytes(i);
+                List<Byte> data = NetworkInterface.intToBytes(i);
 
                 PerfectLinksSender.perfectSend(data, deliveryHost);
             }
