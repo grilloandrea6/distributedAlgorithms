@@ -24,7 +24,7 @@ public class PerfectLinksSender {
     static void begin(Parser p) {
         parser = p;
 
-        System.out.println("PerfectLinksSender constructor called");
+        // System.out.println("PerfectLinksSender constructor called");
 
         new Thread(PerfectLinksSender::retransmitThread).start();
 
@@ -64,21 +64,21 @@ public class PerfectLinksSender {
     }
 
     private static void retransmitThread() {
-        System.out.println("PerfectLinksSender retransmitThread started");
+        // System.out.println("PerfectLinksSender retransmitThread started");
         while (Main.running) {
             try {
                 Packet packet = waitingForAck.take();
                 
                 Long actualTime = System.currentTimeMillis();
                 if (packet.getTimeout() <= actualTime) {
-                    System.out.println("retransmit Thread - Retransmitting packet with id: " + packet.getId());
+                    // System.out.println("retransmit Thread - Retransmitting packet with id: " + packet.getId());
 
                     NetworkInterface.sendPacket(packet);
                     packet.backoff();
                     waitingForAck.put(packet);
 
                 } else {
-                    System.out.println("retransmit Thread - Not retransmitting packet with id: " + packet.getId());
+                    // System.out.println("retransmit Thread - Not retransmitting packet with id: " + packet.getId());
 
                     waitingForAck.put(packet);
                     Thread.sleep(packet.getTimeout() - actualTime); 
@@ -115,7 +115,9 @@ public class PerfectLinksSender {
                 currentPacket = new Packet(data, parser.myId(), deliveryHost);
             } else if(currentPacket.spaceAvailable(data.size())) { // if existing and I can add to it, just add
                 currentPacket.addData(data);
-            } else { // if existing and full, send it and create a new one - this could block if windows is full
+            } else { 
+                
+                // if existing and full, send it and create a new one - this could block if windows is full
                 //System.out.println("packet full - sending and creating new");
                 internalSend(currentPacket);
                 currentPacket = new Packet(data, parser.myId(), deliveryHost);
@@ -132,13 +134,13 @@ public class PerfectLinksSender {
         synchronized(PerfectLinksSender.class) {
             while(windowSize >= WINDOW_MAX_SIZE) {
                 try {
-                    System.out.println("PerfectLinksSender - window full, waiting");
+                    // System.out.println("PerfectLinksSender - window full, waiting");
                     PerfectLinksSender.class.wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-            System.out.println("PerfectLinksSender - window not full, sending" + windowSize);
+            // System.out.println("PerfectLinksSender - window not full, sending" + windowSize);
             windowSize++;
         }
 

@@ -8,7 +8,7 @@ public class PerfectLinksReceiver {
     static private Map<Integer, AckKeeper> ackKeeperMap = new HashMap<>();
 
     public static void receivedPacket(Packet packet) {
-        System.out.println("PerfectLinksReceiver receivedPacket called");
+        // System.out.println("PerfectLinksReceiver receivedPacket called");
 
         int senderId = packet.getSenderID();
 
@@ -18,9 +18,9 @@ public class PerfectLinksReceiver {
         AckKeeper ackKeeper = ackKeeperMap.get(senderId);
 
         if(ackKeeper.isAcked(packet.getId())) {
-            System.out.println("Already acked");
+            // System.out.println("Already acked");
         } else {
-            System.out.println("Not acked");
+            // System.out.println("Not acked");
             ackKeeper.addAck(packet.getId());
             OutputLogger.logDeliver(packet.getSenderID(), packet.getData());
         }

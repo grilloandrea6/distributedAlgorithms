@@ -56,12 +56,12 @@ public class NetworkInterface {
         Host targetHost = parser.hosts().get(packet.getTargetID() - 1);
         InetSocketAddress targetAddress = new InetSocketAddress(targetHost.getIp(), targetHost.getPort());
         try {
-            System.out.println("network interface - Sending packet to id " + packet.getTargetID() + " port " + targetHost.getPort());
+            // System.out.println("network interface - Sending packet to id " + packet.getTargetID() + " port " + targetHost.getPort());
             
             byte[] data = packet.serialize();
             socket.send(new DatagramPacket(Arrays.copyOf(data, data.length), data.length, targetAddress));
         } catch (IOException e) {
-            System.out.println("Failed to send packet to " + packet.getTargetID());
+            // System.out.println("Failed to send packet to " + packet.getTargetID());
             e.printStackTrace();
         } 
     }
