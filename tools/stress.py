@@ -373,13 +373,17 @@ def main(parser_results, testConfig):
                 )
             )
 
-        st.run()
+        # st.run()
+
+        print("NOT RUNNING STRESS TEST")
+        time.sleep(10)
+
         print("StressTest is complete.")
 
         print("Resuming stopped processes.")
         st.continueStoppedProcesses()
 
-        input("Press `Enter` when all processes have finished processing messages.")
+        #input("Press `Enter` when all processes have finished processing messages.")
 
         unterminated = st.remainingUnterminatedProcesses()
         if unterminated is not None:

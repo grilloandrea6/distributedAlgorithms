@@ -107,7 +107,7 @@ public class Main {
 
         if(deliveryHost != parser.myId()) {
             PerfectLinksSender.begin(parser);
-            for (int i = 0; i < nMessages; i++) {
+            for (int i = 1; i <= nMessages; i++) {
                 // System.out.println("Main - Sending message " + i + " to host " + deliveryHost);
                 List<Byte> data = NetworkInterface.intToBytes(i);
 
