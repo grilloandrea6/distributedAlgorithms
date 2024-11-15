@@ -16,15 +16,8 @@ public class OutputLogger {
         synchronized (writer) {
             try {
                 if(Main.running) {
-                    while(!data.isEmpty()) {
-                        data.remove(0);
-                        writer.write("d " + senderId + " " + NetworkInterface.bytesToInt(data));
-                        writer.newLine();
-                        data.remove(0);
-                        data.remove(0);
-                        data.remove(0);
-                        data.remove(0);
-                    }
+                    writer.write("d " + senderId + " " + NetworkInterface.bytesToInt(data));
+                    writer.newLine();
                 }
             } catch (IOException e) {
                 e.printStackTrace();

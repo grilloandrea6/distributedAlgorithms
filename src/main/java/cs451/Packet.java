@@ -134,6 +134,7 @@ public class Packet {
             packet.id = buffer.getInt();                         // 4 bytes
             packet.senderID = buffer.getInt();                   // 4 bytes
             packet.isAckPacket = buffer.get() == 1;              // 1 byte for boolean
+            packet.targetID = NetworkInterface.parser.myId();
             
             for(length -= 9; length > 0; length--) {
                 packet.data.add(buffer.get());
@@ -153,6 +154,7 @@ public class Packet {
         Packet packet = new Packet();
         packet.isAckPacket = true;
         packet.data = NetworkInterface.intToBytes(p.id);
+        packet.senderID = NetworkInterface.parser.myId();
         packet.targetID = p.senderID;
         return packet;
     }
@@ -166,7 +168,7 @@ public class Packet {
     }
 
     public boolean spaceAvailable(int length) {
-        return (data.size() + length + 9) < MAX_PACKET_SIZE && numberOfMessages < 8;
+        return (data.size() + length + 9) < MAX_PACKET_SIZE && numberOfMessages < 1;
     }
 
     public void addData(List<Byte> data2) {

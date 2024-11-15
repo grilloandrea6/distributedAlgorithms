@@ -14,15 +14,12 @@ import java.util.List;
 // a method to add a packet 
 
 public class NetworkInterface {
-    private static Parser parser;
+    public static Parser parser;
 
     private static DatagramSocket socket;
-    
-    private static boolean senderOrReceiver;
 
-    public static void begin(Parser p, boolean sendRec) throws SocketException {
+    public static void begin(Parser p) throws SocketException {
         parser = p;
-        senderOrReceiver = sendRec;
 
         int port = parser.hosts().get(parser.myId() - 1).getPort();
 
@@ -34,15 +31,15 @@ public class NetworkInterface {
     }
 
     public static void receivePackets() {
-        while (Main.running) { // TODO NetworkInterface.running.get()) find way to stop gracefully 
+        DatagramPacket datagramPacket  = new DatagramPacket(new byte[Packet.MAX_PACKET_SIZE], Packet.MAX_PACKET_SIZE);
+        while (Main.running) {
             try {
-                DatagramPacket datagramPacket  = new DatagramPacket(new byte[1000], 1000); // TODO 
                 socket.receive(datagramPacket);
                 //System.out.println("Received packet.\n. Data: " + new String(datagramPacket.getData()) + " - Length: " + datagramPacket.getLength());
                 Packet p = Packet.deserialize(datagramPacket.getData(), datagramPacket.getLength());
                 if (p != null) {
-                    if(senderOrReceiver) PerfectLinksSender.ackReceived(p);
-                    else PerfectLinksReceiver.receivedPacket(p);
+                    if(p.isAckPacket()) PerfectLinks.ackReceived(p);
+                    else PerfectLinks.receivedPacket(p);
                 } else System.err.println("Invalid packet received!");
                 
             } catch (IOException e) {
@@ -59,7 +56,7 @@ public class NetworkInterface {
             // System.out.println("network interface - Sending packet to id " + packet.getTargetID() + " port " + targetHost.getPort());
             
             byte[] data = packet.serialize();
-            socket.send(new DatagramPacket(Arrays.copyOf(data, data.length), data.length, targetAddress));
+            socket.send(new DatagramPacket(Arrays.copyOf(data, data.length), data.length, targetAddress)); //ToDo do i really need the copy?
         } catch (IOException e) {
             // System.out.println("Failed to send packet to " + packet.getTargetID());
             e.printStackTrace();

@@ -70,7 +70,6 @@ public class Main {
         System.out.println("Doing some initialization\n");
 
         int nMessages;
-        int deliveryHost;
         try {
             OutputLogger.begin(parser);
         } catch (IOException e) {
@@ -84,20 +83,16 @@ public class Main {
             BufferedReader configReader = new BufferedReader(new FileReader(parser.config()));
             String config[] = configReader.readLine().split("\\s");
             nMessages = Integer.parseInt(config[0]);
-            deliveryHost = Integer.parseInt(config[1]);
             configReader.close();
-            if(deliveryHost != parser.myId()) {
-                System.out.println("I will send " + nMessages + " messages to host " + deliveryHost + ".");
-            } else {
-                System.out.println("I expect to deliver " + nMessages + " messages from all other hosts.");
-            }
+            System.out.println("I will broadcast " + nMessages + " messages.");
+
         } catch (IOException e) {
             System.err.println("Error reading config file: " + e.getMessage());
             return;
         }
 
         try {
-            NetworkInterface.begin(parser, deliveryHost != parser.myId());
+            NetworkInterface.begin(parser);
         } catch (SocketException e) {
             System.err.println("Error starting NetworkInterface: " + e.getMessage());
             return;
@@ -105,18 +100,15 @@ public class Main {
 
         System.out.println("\nBroadcasting and delivering messages...\n");
 
-        if(deliveryHost != parser.myId()) {
-            PerfectLinksSender.begin(parser);
-            for (int i = 1; i <= nMessages; i++) {
-                // System.out.println("Main - Sending message " + i + " to host " + deliveryHost);
-                List<Byte> data = NetworkInterface.intToBytes(i);
-
-                PerfectLinksSender.perfectSend(data, deliveryHost);
-            }
-            System.out.println("Main - Finished broadcasting messages.");
-        }
-
+        FIFOUniformReliableBroadcast.begin(parser);
         
+        Thread.sleep(2000); //ToDo remove
+
+        for(int i = 1; i <= nMessages; i++) {
+            System.out.println("Main - Broadcasting message " + i);
+            List<Byte> data = NetworkInterface.intToBytes(i);
+            FIFOUniformReliableBroadcast.broadcast(data);
+        }
        
         // After a process finishes broadcasting,
         // it waits forever for the delivery of messages.
