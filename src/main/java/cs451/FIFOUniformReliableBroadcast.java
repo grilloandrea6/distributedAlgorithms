@@ -127,7 +127,7 @@ public class FIFOUniformReliableBroadcast {
                     }
 
                 } // else System.out.println("\tAlready delivered, not doing anything");
-
+                Thread.yield();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

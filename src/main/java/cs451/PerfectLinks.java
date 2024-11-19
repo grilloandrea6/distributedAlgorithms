@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -13,8 +14,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class PerfectLinks {
     static Parser parser;
 
-    private static HashMap<Integer,Integer> windowSize = new HashMap<>();
-    private static HashMap<Integer,List<Packet>> sendingQueue = new HashMap<>();
+    private static List<AtomicInteger> windowSize;
+    private static List<List<Packet>> sendingQueue;
 
     public final static int WINDOW_MAX_SIZE = 10; // ToDo mmmmm
 
@@ -22,19 +23,24 @@ public class PerfectLinks {
     private static int[] hosts;
 
 
-    private static PriorityBlockingQueue<Packet> waitingForAck = new PriorityBlockingQueue<Packet>(WINDOW_MAX_SIZE, (p1, p2) -> p1.getTimeout().compareTo(p2.getTimeout()));
+    private static PriorityBlockingQueue<Packet> waitingForAck;
 
     static void begin(Parser p) {
         parser = p;
 
+
         hosts = parser.hosts().stream().map(Host::getId).mapToInt(Integer::intValue).toArray();
 
+        waitingForAck = new PriorityBlockingQueue<Packet>(hosts.length * WINDOW_MAX_SIZE, (p1, p2) -> p1.getTimeout().compareTo(p2.getTimeout()));
+
         locks = new ArrayList<>(hosts.length);
+        windowSize = new ArrayList<>(hosts.length);
+        sendingQueue = new ArrayList<>(hosts.length);
 
         for(int i = 0; i < hosts.length; i++) {
             locks.add(new ReentrantLock());
-            windowSize.put(hosts[i], 0);
-            sendingQueue.put(hosts[i], new LinkedList<Packet>());
+            windowSize.add(new AtomicInteger(0));
+            sendingQueue.add(new LinkedList<Packet>());
         }
 
         new Thread(PerfectLinks::retransmitThread).start();
@@ -56,6 +62,8 @@ public class PerfectLinks {
                     packet.backoff();
                     waitingForAck.put(packet);
 
+                    Thread.yield();
+
                 } else {
                     // System.out.println("retransmit Thread - Not retransmitting packet with id: " + packet.getId());
 
@@ -72,14 +80,10 @@ public class PerfectLinks {
     public static void perfectSend(List<Byte> data, int deliveryHost) {   
         Packet p = new Packet(data, parser.myId(), deliveryHost);
 
-        if(!windowSize.containsKey(deliveryHost)) {
-            windowSize.put(deliveryHost, 0);
-        }
-        
         Lock lock = locks.get(deliveryHost - 1);
         lock.lock();
         try {
-            sendingQueue.get(deliveryHost).add(p);
+            sendingQueue.get(deliveryHost - 1).add(p);
         } finally {
             lock.unlock();
         }
@@ -95,13 +99,11 @@ public class PerfectLinks {
                     lock = locks.get(hostId - 1);
                     if(lock.tryLock()) {
                         try{
-                            int currentWindowSize = windowSize.get(hostId);
-                            List<Packet> currentSendingQueue = sendingQueue.get(hostId);
+                            List<Packet> currentSendingQueue = sendingQueue.get(hostId - 1);
 
-                            if(currentWindowSize <= WINDOW_MAX_SIZE && currentSendingQueue.size() > 0) {
+                            if(windowSize.get(hostId - 1).get() <= WINDOW_MAX_SIZE && currentSendingQueue.size() > 0) {
                                 p = currentSendingQueue.remove(0);
-                                currentWindowSize++;
-                                windowSize.put(hostId, currentWindowSize);
+                                windowSize.get(hostId - 1).incrementAndGet();
                             }
                         }
                         finally {
@@ -115,6 +117,7 @@ public class PerfectLinks {
                         }
                     }
                 }
+                Thread.yield();
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -125,6 +128,7 @@ public class PerfectLinks {
 
     static double timeForLockAckReceived = 0.;
     static double maximumTimeForLockAckReceived = 0.;
+    static int nTimesOverMillisecond = 0;
     static final double ALPHA = 0.25;
 
     public static void ackReceived(Packet packet) {
@@ -145,27 +149,28 @@ public class PerfectLinks {
         // }
 
         int ackedId = packet.getAckedIds();
-        waitingForAck.removeIf(p -> p.getTargetID() == senderId && p.getId() == ackedId);
 
-        Lock lock = locks.get(senderId - 1);
 
         long time = System.nanoTime();
-        lock.lock();
 
-
-        try {
-            time = System.nanoTime() - time;
-            timeForLockAckReceived = ALPHA * time + (1 - ALPHA) * timeForLockAckReceived;
-            if(time > maximumTimeForLockAckReceived) {
-                maximumTimeForLockAckReceived = time;
+        //waitingForAck.removeIf(p -> p.getTargetID() == senderId && p.getId() == ackedId);
+        for( Packet p : waitingForAck) {
+            if(p.getTargetID() == senderId && p.getId() == ackedId) {
+                waitingForAck.remove(p);
+                break;
             }
-
-            
-            windowSize.put(senderId, windowSize.get(senderId) - 1);
-            //PerfectLinks.class.notify(); ToDo 
-        } finally {
-            lock.unlock();
         }
+        
+        time = System.nanoTime() - time;
+        timeForLockAckReceived = ALPHA * time + (1 - ALPHA) * timeForLockAckReceived;
+        if(time > maximumTimeForLockAckReceived) {
+            maximumTimeForLockAckReceived = time;
+        }
+        if(time > 1000000) {
+            nTimesOverMillisecond++;
+        }
+            
+        windowSize.get(senderId - 1).decrementAndGet();
     }
 
     // receiver part

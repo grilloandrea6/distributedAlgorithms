@@ -18,14 +18,17 @@ public class Main {
 
 
         
-        System.err.printf("| %2d  | %10.3f us | %10.3f us | %10.3f us | %10.3f us | %10.3f us | %10.3f us |\n", 
+        System.err.printf("| %2d  | %10.3f us | %10.3f us | %10d times | %10.3f us | %10.3f us | %10d times | %10.3f us | %10.3f us | %10d times |\n", 
             parser.myId(),
             NetworkInterface.timeForAckReceived / 1000.0, 
             NetworkInterface.maximumTimeForAckReceived / 1000.0, 
+            NetworkInterface.timesOverMillisecondAckReceived,
             NetworkInterface.timeForProcessPacket / 1000.0,
             NetworkInterface.maximumTimeForProcessPacket / 1000.0,
+            NetworkInterface.timesOverMillisecondProcessPacket,
             PerfectLinks.timeForLockAckReceived / 1000.0,
-            PerfectLinks.maximumTimeForLockAckReceived / 1000.0);
+            PerfectLinks.maximumTimeForLockAckReceived / 1000.0,
+            PerfectLinks.nTimesOverMillisecond);
 
         
 

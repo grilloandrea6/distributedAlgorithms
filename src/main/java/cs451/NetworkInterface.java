@@ -18,6 +18,8 @@ public class NetworkInterface {
     static double timeForProcessPacket = 0.;
     static double maximumTimeForAckReceived = 0.;
     static double maximumTimeForProcessPacket = 0.;
+    static int timesOverMillisecondAckReceived = 0;
+    static int timesOverMillisecondProcessPacket = 0;
     static double ALPHA = 0.25;
 
     public static void begin(Parser p) throws SocketException {
@@ -49,6 +51,9 @@ public class NetworkInterface {
                         if(time > maximumTimeForAckReceived) {
                             maximumTimeForAckReceived = time;
                         }
+                        if(time > 1000000) {
+                            timesOverMillisecondAckReceived++;
+                        }
                     }
                     else {
                         long time = System.nanoTime();
@@ -57,6 +62,9 @@ public class NetworkInterface {
                         timeForProcessPacket = ALPHA * time + (1 - ALPHA) * timeForProcessPacket;
                         if(time > maximumTimeForProcessPacket) {
                             maximumTimeForProcessPacket = time;
+                        }
+                        if(time > 1000000) {
+                            timesOverMillisecondProcessPacket++;
                         }
                     }
                 } else System.err.println("Invalid packet received!");
