@@ -48,7 +48,7 @@ public class FIFOUrbPacket {
             packet.data = List.copyOf(data.subList(5, data.size()));
 
             packet.sender = sender;
-            System.out.println("Deserialized packet: " + packet.origSender + " " + packet.seq + " " + packet.data);
+            // System.out.println("Deserialized packet: " + packet.origSender + " " + packet.seq + " " + packet.data);
 
             
             return packet;

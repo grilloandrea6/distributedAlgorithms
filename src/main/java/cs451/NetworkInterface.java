@@ -9,14 +9,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-// TODO: i don't think the sender thread is needed
-// have one thread that receives packets and adds them to a blocking queue? or have a reference to a upper layer to deliver them
-// a method to add a packet 
 
 public class NetworkInterface {
     public static Parser parser;
 
-    private static DatagramSocket socket;
+    private static DatagramSocket socketReceive, socketSend;
+    static double timeForAckReceived = 0.;
+    static double timeForProcessPacket = 0.;
+    static double maximumTimeForAckReceived = 0.;
+    static double maximumTimeForProcessPacket = 0.;
+    static double ALPHA = 0.25;
 
     public static void begin(Parser p) throws SocketException {
         parser = p;
@@ -24,8 +26,9 @@ public class NetworkInterface {
         int port = parser.hosts().get(parser.myId() - 1).getPort();
 
         System.out.println("My ID: " + parser.myId() + " - Port:" + port);
-        socket = new DatagramSocket(port);
+        socketReceive = new DatagramSocket(port);
         System.out.println("Listening socket created on port " + port);
+        socketSend = new DatagramSocket();
 
         new Thread(NetworkInterface::receivePackets).start();
     }
@@ -34,19 +37,35 @@ public class NetworkInterface {
         DatagramPacket datagramPacket  = new DatagramPacket(new byte[Packet.MAX_PACKET_SIZE], Packet.MAX_PACKET_SIZE);
         while (Main.running) {
             try {
-                socket.receive(datagramPacket);
+                socketReceive.receive(datagramPacket);
                 //System.out.println("Received packet.\n. Data: " + new String(datagramPacket.getData()) + " - Length: " + datagramPacket.getLength());
                 Packet p = Packet.deserialize(datagramPacket.getData(), datagramPacket.getLength());
                 if (p != null) {
-                    if(p.isAckPacket()) PerfectLinks.ackReceived(p);
-                    else PerfectLinks.receivedPacket(p);
+                    if(p.isAckPacket()) {
+                        long time = System.nanoTime();
+                        PerfectLinks.ackReceived(p);
+                        time = System.nanoTime() - time;
+                        timeForAckReceived = ALPHA * time + (1 - ALPHA) * timeForAckReceived;
+                        if(time > maximumTimeForAckReceived) {
+                            maximumTimeForAckReceived = time;
+                        }
+                    }
+                    else {
+                        long time = System.nanoTime();
+                        PerfectLinks.receivedPacket(p);
+                        time = System.nanoTime() - time;
+                        timeForProcessPacket = ALPHA * time + (1 - ALPHA) * timeForProcessPacket;
+                        if(time > maximumTimeForProcessPacket) {
+                            maximumTimeForProcessPacket = time;
+                        }
+                    }
                 } else System.err.println("Invalid packet received!");
                 
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        System.err.println("Exiting receivePackets thread");
+        System.out.println("NetworkInterface - Exiting receivePackets thread");
     } 
 
     public static void sendPacket(Packet packet) {
@@ -56,7 +75,7 @@ public class NetworkInterface {
             // System.out.println("network interface - Sending packet to id " + packet.getTargetID() + " port " + targetHost.getPort());
             
             byte[] data = packet.serialize();
-            socket.send(new DatagramPacket(Arrays.copyOf(data, data.length), data.length, targetAddress)); //ToDo do i really need the copy?
+            socketSend.send(new DatagramPacket(Arrays.copyOf(data, data.length), data.length, targetAddress)); //ToDo do i really need the copy?
         } catch (IOException e) {
             // System.out.println("Failed to send packet to " + packet.getTargetID());
             e.printStackTrace();

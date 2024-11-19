@@ -6,7 +6,7 @@ import java.util.List;
 
 public class Packet {
 
-    static private final Long INITIAL_TIMEOUT = 230L;
+    static private final Long INITIAL_TIMEOUT = 600L;
 
     static public final int  MAX_PACKET_SIZE = 50;
     
@@ -72,9 +72,9 @@ public class Packet {
         return isAckPacket;
     }
 
-    public int[] getAckedIds() {
-        if(!isAckPacket)
-            return null;
+    public int getAckedIds() { //ToDo do I really want multiple acks?
+        // if(!isAckPacket)
+        //     return null;
 
         // Make sure the byteList size is a multiple of 4
         if (data.size() % 4 != 0) {
@@ -82,17 +82,18 @@ public class Packet {
         }
         
         // Create an int array where each int will represent 4 bytes
-        int[] intArray = new int[data.size() / 4];
+        // int[] intArray = new int[data.size() / 4];
         
         // Iterate over the byteList in steps of 4 bytes and combine them into a single int
-        for (int i = 0; i < intArray.length; i++) {
-            intArray[i] = ((data.get(i * 4) & 0xFF) << 24) |  // First byte (most significant)
-                          ((data.get(i * 4 + 1) & 0xFF) << 16) |  // Second byte
-                          ((data.get(i * 4 + 2) & 0xFF) << 8) |   // Third byte
-                          (data.get(i * 4 + 3) & 0xFF);           // Fourth byte (least significant)
-        }
+        // for (int i = 0; i < intArray.length; i++) {
+        //     intArray[i] = ((data.get(i * 4) & 0xFF) << 24) |  // First byte (most significant)
+        //                   ((data.get(i * 4 + 1) & 0xFF) << 16) |  // Second byte
+        //                   ((data.get(i * 4 + 2) & 0xFF) << 8) |   // Third byte
+        //                   (data.get(i * 4 + 3) & 0xFF);           // Fourth byte (least significant)
+        // }
         
-        return intArray;
+        // return intArray;
+        return NetworkInterface.bytesToInt(data);
     }
 
     public int getId() {

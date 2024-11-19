@@ -3,21 +3,31 @@ package cs451;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.Socket;
 import java.net.SocketException;
 import java.util.List;
-import java.util.TimerTask;
 
 public class Main {
 
     public static boolean running = true;
+    static Parser parser;
 
     private static void handleSignal() {
         //immediately stop network packet processing
         running = false;
         System.out.println("Immediately stopping network packet processing.");
+
+
+        
+        System.err.printf("| %2d  | %10.3f us | %10.3f us | %10.3f us | %10.3f us | %10.3f us | %10.3f us |\n", 
+            parser.myId(),
+            NetworkInterface.timeForAckReceived / 1000.0, 
+            NetworkInterface.maximumTimeForAckReceived / 1000.0, 
+            NetworkInterface.timeForProcessPacket / 1000.0,
+            NetworkInterface.maximumTimeForProcessPacket / 1000.0,
+            PerfectLinks.timeForLockAckReceived / 1000.0,
+            PerfectLinks.maximumTimeForLockAckReceived / 1000.0);
+
+        
 
         //write/flush output file if necessary
         System.out.println("Writing output.");
@@ -38,7 +48,7 @@ public class Main {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        Parser parser = new Parser(args);
+        parser = new Parser(args);
         parser.parse();
 
         initSignalHandlers();

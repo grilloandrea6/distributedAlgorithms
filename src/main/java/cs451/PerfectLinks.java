@@ -1,10 +1,10 @@
 package cs451;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -13,55 +13,34 @@ import java.util.concurrent.locks.ReentrantLock;
 public class PerfectLinks {
     static Parser parser;
 
-    private static Integer windowSize = 0;
+    private static HashMap<Integer,Integer> windowSize = new HashMap<>();
+    private static HashMap<Integer,List<Packet>> sendingQueue = new HashMap<>();
 
-    public final static int WINDOW_MAX_SIZE = 5; // ToDo mmmmm
+    public final static int WINDOW_MAX_SIZE = 10; // ToDo mmmmm
 
-    private static Packet currentPacket = null;
+    private static List<Lock> locks;
+    private static int[] hosts;
 
-    private static Lock lock = new ReentrantLock();
 
     private static PriorityBlockingQueue<Packet> waitingForAck = new PriorityBlockingQueue<Packet>(WINDOW_MAX_SIZE, (p1, p2) -> p1.getTimeout().compareTo(p2.getTimeout()));
 
     static void begin(Parser p) {
         parser = p;
 
+        hosts = parser.hosts().stream().map(Host::getId).mapToInt(Integer::intValue).toArray();
+
+        locks = new ArrayList<>(hosts.length);
+
+        for(int i = 0; i < hosts.length; i++) {
+            locks.add(new ReentrantLock());
+            windowSize.put(hosts[i], 0);
+            sendingQueue.put(hosts[i], new LinkedList<Packet>());
+        }
+
         new Thread(PerfectLinks::retransmitThread).start();
 
-        //sendTimer(); ToDo not run
+        new Thread(PerfectLinks::sendingThread).start();
     }
-
-    // private static void sendTimer() {
-    //     // Create a new Timer instance
-    //     Timer timer = new Timer();
-
-    //     TimerTask task = new TimerTask() {
-    //         @Override
-    //         public void run() {
-    //             lock.lock();
-    //             try {
-    //                 if(currentPacket == null) return;
-                    
-    //                 if(currentPacket.getCreationTime() < System.currentTimeMillis() - 100) { // ToDo parametrize
-    //                     internalSend(currentPacket);
-    //                     // System.out.println("Timer - sending packet with id: " + currentPacket.getId());
-    //                     currentPacket = null;
-    //                 }
-    //             }
-    //             finally {
-    //                 lock.unlock();
-    //             }
-                
-    //         }
-    //     };
-
-    //     int delay = 500;       // Initial delay (in milliseconds)
-    //     int period = 500;   // ToDo Time between executions (in milliseconds) => 5 seconds
-
-    //     // Schedule the task to run every 'period' milliseconds after an initial delay
-    //     timer.scheduleAtFixedRate(task, delay, period);
-
-    // }
 
     private static void retransmitThread() {
         // System.out.println("PerfectLinksSender retransmitThread started");
@@ -87,76 +66,107 @@ public class PerfectLinks {
                 e.printStackTrace();
             }
         }
-        System.err.println("Exiting retransmit thread");
+        System.out.println("Exiting retransmit thread");
     }
 
-    public static void ackReceived(Packet packet) {
-        if(!packet.isAckPacket())
-            return;
-        
-        int ackedIds[] = packet.getAckedIds(); // ToDo do I really want multiple acks?
-        for (int id : ackedIds) {
-            waitingForAck.removeIf(p -> p.getTargetID() == packet.getSenderID() && p.getId() == id);
+    public static void perfectSend(List<Byte> data, int deliveryHost) {   
+        Packet p = new Packet(data, parser.myId(), deliveryHost);
+
+        if(!windowSize.containsKey(deliveryHost)) {
+            windowSize.put(deliveryHost, 0);
         }
-
-        synchronized(PerfectLinks.class) {
-            windowSize -= ackedIds.length;
-            PerfectLinks.class.notify();
-        }
-    }
-
-
-
-    public static void perfectSend(List<Byte> data, int deliveryHost) throws InterruptedException {   
         
-     
+        Lock lock = locks.get(deliveryHost - 1);
         lock.lock();
         try {
-
-            // if(currentPacket == null) { // if null i just create a new packet with data
-            // System.out.println("sending packet!");
-                currentPacket = new Packet(data, parser.myId(), deliveryHost);
-
-
-                //Todo Todo added this to spedup the process
-                internalSend(currentPacket);
-                currentPacket = null;
-            // } else if(currentPacket.spaceAvailable(data.size())) { // if existing and I can add to it, just add
-            //     currentPacket.addData(data);
-            // } else { 
-                
-            //     // if existing and full, send it and create a new one - this could block if windows is full
-            //     //System.out.println("packet full - sending and creating new");
-            //     internalSend(currentPacket);
-            //     currentPacket = new Packet(data, parser.myId(), deliveryHost);
-            // }
-            //OutputLogger.logBroadcast(data);
-        }
-        finally {
+            sendingQueue.get(deliveryHost).add(p);
+        } finally {
             lock.unlock();
         }
-        
     }
 
-    private static void internalSend(Packet packet) {
-        synchronized(PerfectLinks.class) {
-            while(windowSize >= WINDOW_MAX_SIZE) {
-                try {
-                    // System.out.println("PerfectLinksSender - window full, waiting");
-                    PerfectLinks.class.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+    private static void sendingThread() {
+        while(Main.running) {
+            try {
+                Lock lock;
+                for(int hostId : hosts) {
+                    Packet p = null;
+
+                    lock = locks.get(hostId - 1);
+                    if(lock.tryLock()) {
+                        try{
+                            int currentWindowSize = windowSize.get(hostId);
+                            List<Packet> currentSendingQueue = sendingQueue.get(hostId);
+
+                            if(currentWindowSize <= WINDOW_MAX_SIZE && currentSendingQueue.size() > 0) {
+                                p = currentSendingQueue.remove(0);
+                                currentWindowSize++;
+                                windowSize.put(hostId, currentWindowSize);
+                            }
+                        }
+                        finally {
+                            lock.unlock();
+                        }
+
+                        if(p != null) {
+                            NetworkInterface.sendPacket(p);
+                            p.setTimeout();
+                            waitingForAck.put(p);
+                        }
+                    }
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            // System.out.println("PerfectLinksSender - window not full, sending" + windowSize);
-            windowSize++;
         }
-
-        NetworkInterface.sendPacket(packet);
-        packet.setTimeout();
-        waitingForAck.put(packet);
+        System.out.println("Exiting sending thread");
     }
 
+
+    static double timeForLockAckReceived = 0.;
+    static double maximumTimeForLockAckReceived = 0.;
+    static final double ALPHA = 0.25;
+
+    public static void ackReceived(Packet packet) {
+        // just checked before calling this function
+        // if(!packet.isAckPacket())
+        //     return;
+
+        int senderId = packet.getSenderID();
+        
+        // int ackedId[] = packet.getAckedIds(); // ToDo do I really want multiple acks?
+        // for (int id : ackedIds) {
+        //     waitingForAck.removeIf(p -> p.getTargetID() == senderId && p.getId() == id);
+        // }
+
+        // synchronized(PerfectLinks.class) {
+        //     windowSize.put(senderId, windowSize.get(senderId) - ackedIds.length);
+        //     PerfectLinks.class.notify();
+        // }
+
+        int ackedId = packet.getAckedIds();
+        waitingForAck.removeIf(p -> p.getTargetID() == senderId && p.getId() == ackedId);
+
+        Lock lock = locks.get(senderId - 1);
+
+        long time = System.nanoTime();
+        lock.lock();
+
+
+        try {
+            time = System.nanoTime() - time;
+            timeForLockAckReceived = ALPHA * time + (1 - ALPHA) * timeForLockAckReceived;
+            if(time > maximumTimeForLockAckReceived) {
+                maximumTimeForLockAckReceived = time;
+            }
+
+            
+            windowSize.put(senderId, windowSize.get(senderId) - 1);
+            //PerfectLinks.class.notify(); ToDo 
+        } finally {
+            lock.unlock();
+        }
+    }
 
     // receiver part
     static private Map<Integer, AckKeeper> ackKeeperMap = new HashMap<>();
