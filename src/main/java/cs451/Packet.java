@@ -10,7 +10,7 @@ public class Packet {
 
     static public final int  MAX_PACKET_SIZE = 50;
     
-    private int targetID;
+    int targetID;
     
     private List<Byte> data;
 
@@ -20,7 +20,7 @@ public class Packet {
 
     private boolean isAckPacket;
 
-    private int id;
+    int id;
     private int senderID;
 
     private Long interval;
@@ -28,7 +28,6 @@ public class Packet {
     private Long timeout;
 
     private Long creationTime;
-    
 
     Packet() {
         creationTime = System.currentTimeMillis();

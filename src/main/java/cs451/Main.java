@@ -18,7 +18,7 @@ public class Main {
 
 
         
-        System.err.printf("| %2d  | %10.3f us | %10.3f us | %10d times | %10.3f us | %10.3f us | %10d times | %10.3f us | %10.3f us | %10d times |\n", 
+        System.err.printf("| %2d  | %12.0f us | %12.0f us | %10d times | %12.0f us | %12.0f us | %10d times | %12.0f us | %12.0f us | %10d times | %10d maxSize|\n", 
             parser.myId(),
             NetworkInterface.timeForAckReceived / 1000.0, 
             NetworkInterface.maximumTimeForAckReceived / 1000.0, 
@@ -28,7 +28,8 @@ public class Main {
             NetworkInterface.timesOverMillisecondProcessPacket,
             PerfectLinks.timeForLockAckReceived / 1000.0,
             PerfectLinks.maximumTimeForLockAckReceived / 1000.0,
-            PerfectLinks.nTimesOverMillisecond);
+            PerfectLinks.nTimesOverMillisecond,
+            PerfectLinks.maxQueueSize);
 
         
 
