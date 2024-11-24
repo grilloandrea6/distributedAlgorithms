@@ -45,7 +45,8 @@ public class FIFOUrbPacket {
 
             packet.origSender = data.get(0);
             packet.seq = NetworkInterface.bytesToInt(data.subList(1, 5));
-            packet.data = List.copyOf(data.subList(5, data.size()));
+            // packet.data = List.copyOf(data.subList(5, data.size()));
+            packet.data = data.subList(5, data.size());
 
             packet.sender = sender;
             // System.out.println("Deserialized packet: " + packet.origSender + " " + packet.seq + " " + packet.data);
