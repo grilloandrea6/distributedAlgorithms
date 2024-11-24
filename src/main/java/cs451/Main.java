@@ -18,7 +18,7 @@ public class Main {
 
 
         
-        System.err.printf("| %2d  | %12.0f us | %12.0f us | %10d times | %12.0f us | %12.0f us | %10d times | %12.0f us | %12.0f us | %10d times | %10d maxSize|\n", 
+        System.err.printf("| %2d  | %12.3f us | %12.0f us | %10d times | %12.3f us | %12.0f us | %10d times | %12.3f us | %12.0f us | %10d times | %10d maxSize|\n", 
             parser.myId(),
             NetworkInterface.timeForAckReceived / 1000.0, 
             NetworkInterface.maximumTimeForAckReceived / 1000.0, 

@@ -21,6 +21,8 @@ public class PerfectLinks {
 
     private static PriorityBlockingQueue<Packet> waitingForAck;
 
+    static private List<AckKeeper> ackKeeperList;
+
     static void begin(Parser p) {
         parser = p;
 
@@ -30,10 +32,12 @@ public class PerfectLinks {
 
         windowSize = new ArrayList<>(hosts.length);
         sendingQueue = new ArrayList<>(hosts.length);
+        ackKeeperList = new ArrayList<>(hosts.length);
 
         for(int i = 0; i < hosts.length; i++) {
             windowSize.add(new AtomicInteger(0));
             sendingQueue.add(new ConcurrentLinkedQueue<>());
+            ackKeeperList.add(new AckKeeper());
         }
 
         new Thread(PerfectLinks::retransmitThread).start();
@@ -104,12 +108,6 @@ public class PerfectLinks {
         System.out.println("Exiting sending thread");
     }
 
-
-    static double timeForLockAckReceived = 0.;
-    static double maximumTimeForLockAckReceived = 0.;
-    static int nTimesOverMillisecond = 0;
-    static final double ALPHA = 0.25;
-
     public static void ackReceived(Packet packet) {
         int senderId = packet.getSenderID();
 
@@ -124,23 +122,27 @@ public class PerfectLinks {
         windowSize.get(senderId - 1).decrementAndGet();
     }
 
-    // receiver part
-    static private Map<Integer, AckKeeper> ackKeeperMap = new HashMap<>();
+
+    static double timeForLockAckReceived = 0.;
+    static double maximumTimeForLockAckReceived = 0.;
+    static int nTimesOverMillisecond = 0;
+    static final double ALPHA = 0.25;
+
 
     public static void receivedPacket(Packet packet) {
         // System.out.println("PerfectLinks receivedPacket called");
 
+
+
         int senderId = packet.getSenderID();
 
-        if(!ackKeeperMap.containsKey(senderId))
-            ackKeeperMap.put(senderId, new AckKeeper());
-
-        AckKeeper ackKeeper = ackKeeperMap.get(senderId);
 
         Packet ackPacket = Packet.createAckPacket(packet);
-
-        //System.out.println("PERFECT_LINKS - sending ack packet for packet id " + packet.getId() + " to host " + packet.getSenderID());
         NetworkInterface.sendPacket(ackPacket);
+
+        
+        //System.out.println("PERFECT_LINKS - sending ack packet for packet id " + packet.getId() + " to host " + packet.getSenderID());
+        AckKeeper ackKeeper = ackKeeperList.get(senderId - 1);
 
         if(ackKeeper.isAcked(packet.getId())) {
             // System.out.println("Already acked");
@@ -148,9 +150,22 @@ public class PerfectLinks {
             // System.out.println("Not acked");
             ackKeeper.addAck(packet.getId());
             
+            long time = System.nanoTime();
+
             //OutputLogger.logDeliver(packet.getSenderID(), packet.getData());
             FIFOUniformReliableBroadcast.receivePacket(packet.getSenderID(), packet.getData());
+
+            time = System.nanoTime() - time;
+            timeForLockAckReceived = ALPHA * time + (1 - ALPHA) * timeForLockAckReceived;
+            if(time > maximumTimeForLockAckReceived) {
+                maximumTimeForLockAckReceived = time;
+            }
+            if(time > 1000000) {
+                nTimesOverMillisecond++;
+            }
         }
+
+
 
     }
 }
