@@ -1,11 +1,9 @@
 package cs451;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class FIFOUniformReliableBroadcast {
 
@@ -28,11 +26,7 @@ public class FIFOUniformReliableBroadcast {
     static HashMap<FIFOUrbPacket, Integer> acked = new HashMap<>();
 
 
-    static BlockingQueue<FIFOUrbPacket> deliveryQueue = new LinkedBlockingQueue<>();
-
     static void begin(Parser p) {
-        PerfectLinks.begin(p);
-
         hostNumber = p.hosts().size();
         myId = p.myId();
 
@@ -40,11 +34,10 @@ public class FIFOUniformReliableBroadcast {
         for(int i = 0; i < hostNumber; i++) {
             delivered.add(new FIFOKeeper());
         }
-
-        new Thread(FIFOUniformReliableBroadcast::processReceivedPackets).start();
+        PerfectLinks.begin(p);
     }
 
-    static void broadcast(List<Byte> data) {
+    static void broadcast(List<Byte> data) throws Exception {
         // System.out.println("FIFOUniformReliableBroadcast - Broadcasting message");
 
         OutputLogger.logBroadcast(data);
@@ -55,12 +48,8 @@ public class FIFOUniformReliableBroadcast {
 
         synchronized(FIFOUniformReliableBroadcast.class) {
             while(windowSize >= MAX_WINDOW_SIZE) {
-                try {
-                    // System.out.println("FIFOUniformReliableBroadcast - window full, waiting");
-                    FIFOUniformReliableBroadcast.class.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                // System.out.println("FIFOUniformReliableBroadcast - window full, waiting");
+                FIFOUniformReliableBroadcast.class.wait();
             }
             windowSize++;
         }
@@ -75,7 +64,7 @@ public class FIFOUniformReliableBroadcast {
         pending.put(packet, packet);
     }
 
-    static void internalBroadcast(FIFOUrbPacket packet) {
+    static void internalBroadcast(FIFOUrbPacket packet) throws InterruptedException {
         List<Byte> serialized = packet.serialize();
 
         for(int deliveryHost = 1; deliveryHost <= hostNumber; deliveryHost++) {
@@ -83,68 +72,42 @@ public class FIFOUniformReliableBroadcast {
             if(deliveryHost == myId)
                 continue;
         
-            try{
-                PerfectLinks.perfectSend(serialized, deliveryHost);
-            } catch (Exception e) {
-                System.out.println("Error sending to host " + deliveryHost);
-                e.printStackTrace();
-            } 
+            PerfectLinks.perfectSend(serialized, deliveryHost);
         }
     }
 
-    public static void processReceivedPackets() {
-        while (Main.running) {
-            try {
-                FIFOUrbPacket packet = deliveryQueue.take();
-                //System.out.println("Received packet from " + packet.sender + " with orig sender " + packet.origSender + " seq: " + packet.seq);
 
-                if(!delivered.get(packet.origSender - 1).isDelivered(packet)) {
-                //if(!delivered.contains(packet)) {
-                    acked.put(packet, acked.getOrDefault(packet, 0) + 1);
-                    // System.out.println("\tacked for packet is " + acked.get(packet));
+    static void receivePacket(int senderId, List<Byte> data) throws InterruptedException, IOException {        
+        FIFOUrbPacket packet = FIFOUrbPacket.deserialize(data, senderId);
 
-                    if(!pending.containsKey(packet)) {
-                        // System.out.println("\tAdding to pending and broadcasting");
-                        pending.put(packet, packet);
-                        internalBroadcast(packet);
 
-                    } else if(acked.get(packet) >= hostNumber/2) {
-                        
-                        delivered.get(packet.origSender - 1).addMessage(packet);
+        if(!delivered.get(packet.origSender - 1).isDelivered(packet)) {
+            acked.put(packet, acked.getOrDefault(packet, 0) + 1);
+            // System.out.println("\tacked for packet is " + acked.get(packet));
 
-                        // // System.out.println("\tDelivering packet");
-                        // OutputLogger.logDeliver(packet.origSender, packet.data);
-                        // delivered.add(packet);
-                        
-                        acked.remove(packet);
-                        pending.remove(packet);
-                        if(packet.origSender == myId) {
-                            synchronized(FIFOUniformReliableBroadcast.class) {
-                                windowSize--;
-                                FIFOUniformReliableBroadcast.class.notify();
-                            }
-                        }
+            if(!pending.containsKey(packet)) {
+                // System.out.println("\tAdding to pending and broadcasting");
+                pending.put(packet, packet);
+                internalBroadcast(packet);
+
+            } else if(acked.get(packet) >= hostNumber/2) {
+                
+                delivered.get(packet.origSender - 1).addMessage(packet);
+
+                // // System.out.println("\tDelivering packet");
+                // OutputLogger.logDeliver(packet.origSender, packet.data);
+                // delivered.add(packet);
+                
+                acked.remove(packet);
+                pending.remove(packet);
+                if(packet.origSender == myId) {
+                    synchronized(FIFOUniformReliableBroadcast.class) {
+                        windowSize--;
+                        FIFOUniformReliableBroadcast.class.notify();
                     }
-
-                } // else System.out.println("\tAlready delivered, not doing anything");
-                Thread.yield();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                }
             }
-        }
-        System.out.println("FIFOUniformReliableBroadcast - Exiting processReceivedPackets thread");
-    } 
-
-
-    static void receivePacket(int senderId, List<Byte> data) {        
-        try{
-            // System.out.println("received packet, enqueuing");
-            FIFOUrbPacket packet = FIFOUrbPacket.deserialize(data, senderId);
-
-            deliveryQueue.put(packet);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        } 
     }
 
 }

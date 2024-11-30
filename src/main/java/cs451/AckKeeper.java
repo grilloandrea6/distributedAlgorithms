@@ -16,7 +16,10 @@ public class AckKeeper {
         this.nacks = new HashSet<>();
     }
 
-    public void addAck(int ack) {
+    public boolean addAck(int ack) {
+        if (isAcked(ack))
+            return false;
+
         if(nacks.contains(ack)) {
             nacks.remove(ack);
         } else if (ack == this.maximumInOrderAck + 1) {
@@ -29,6 +32,7 @@ public class AckKeeper {
         } else {
             this.acks.add(ack);
         }
+        return true;
     }
 
     private void removeAcks() {

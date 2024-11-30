@@ -1,6 +1,10 @@
 package cs451;
 
 import java.util.Set;
+
+import javax.imageio.IIOException;
+
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.PriorityQueue;
 
@@ -15,7 +19,7 @@ public class FIFOKeeper {
         this.pending = new PriorityQueue<>((p1,p2) -> p1.seq - p2.seq);
     }
 
-    public void addMessage(FIFOUrbPacket packet) {
+    public void addMessage(FIFOUrbPacket packet) throws IOException {
         if (packet.seq == this.maximumInOrderMessage + 1) {
             OutputLogger.logDeliver(packet.origSender, packet.data);
 
@@ -26,7 +30,7 @@ public class FIFOKeeper {
         }
     }
 
-    private void removeMessages() {
+    private void removeMessages() throws IOException {
         FIFOUrbPacket packet = this.pending.peek();
 
         while(packet != null) {

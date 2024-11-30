@@ -31,13 +31,13 @@ public class FIFOUrbPacket {
         return buffer;
     }
 
-    public static FIFOUrbPacket deserialize(List<Byte> data, int sender) {
+    public static FIFOUrbPacket deserialize(List<Byte> data, int sender)  {
         // System.out.println("deserialize packet: size " + data.size());
 
-        try{
-            if(data.size() < 5) {
-                throw new Exception("Invalid packet size");
-            }
+        // try{
+            // if(data.size() < 5) {
+            //     throw new Exception("Invalid packet size");
+            // }
 
             FIFOUrbPacket packet = new FIFOUrbPacket();
 
@@ -53,11 +53,11 @@ public class FIFOUrbPacket {
 
             
             return packet;
-        } catch (Exception e) {
-            System.out.println("Failed to deserialize packet.");
-            e.printStackTrace();
-            return null;
-        }
+        // } catch (Exception e) {
+        //     System.out.println("Failed to deserialize packet.");
+        //     e.printStackTrace();
+        //     return null;
+        // }
         
     }
 

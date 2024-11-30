@@ -18,7 +18,7 @@ public class Main {
 
 
         
-        System.err.printf("| %2d  | %12.3f us | %12.0f us | %10d times | %12.3f us | %12.0f us | %10d times | %12.3f us | %12.0f us | %10d times | %10d maxSize|\n", 
+        System.err.printf("| %2d  | %12.3f us | %12.0f us | %10d times | %12.3f us | %12.0f us | %10d times | %12.3f us | %12.0f us | %10d times | %10d maxSize| retr %4d |\n", 
             parser.myId(),
             NetworkInterface.timeForAckReceived / 1000.0, 
             NetworkInterface.maximumTimeForAckReceived / 1000.0, 
@@ -26,10 +26,18 @@ public class Main {
             NetworkInterface.timeForProcessPacket / 1000.0,
             NetworkInterface.maximumTimeForProcessPacket / 1000.0,
             NetworkInterface.timesOverMillisecondProcessPacket,
-            PerfectLinks.timeForLockAckReceived / 1000.0,
-            PerfectLinks.maximumTimeForLockAckReceived / 1000.0,
-            PerfectLinks.nTimesOverMillisecond,
-            PerfectLinks.maxQueueSize);
+
+            // PerfectLinks.timeForLockAckReceived / 1000.0,
+            // PerfectLinks.maximumTimeForLockAckReceived / 1000.0,
+            // PerfectLinks.nTimesOverMillisecond,
+            
+            PerfectLinks.timeFor /1000.0,
+            PerfectLinks.maximumTimeFor/1000.0 ,
+            PerfectLinks.nTimesFor,
+        
+
+            PerfectLinks.maxQueueSize,
+            PerfectLinks.nRetrasmissions);
 
         
 
@@ -105,23 +113,20 @@ public class Main {
             return;
         }
 
-        try {
-            NetworkInterface.begin(parser);
-        } catch (SocketException e) {
-            System.err.println("Error starting NetworkInterface: " + e.getMessage());
-            return;
-        }
-
         System.out.println("\nBroadcasting and delivering messages...\n");
 
         FIFOUniformReliableBroadcast.begin(parser);
         
         Thread.sleep(2000); //ToDo remove
 
-        for(int i = 1; i <= nMessages; i++) {
-            System.out.println("Main - Broadcasting message " + i);
-            List<Byte> data = NetworkInterface.intToBytes(i);
-            FIFOUniformReliableBroadcast.broadcast(data);
+        try {
+            for(int i = 1; i <= nMessages; i++) {
+                System.out.println("Main - Broadcasting message " + i);
+                List<Byte> data = NetworkInterface.intToBytes(i);
+                FIFOUniformReliableBroadcast.broadcast(data);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
        
         // After a process finishes broadcasting,

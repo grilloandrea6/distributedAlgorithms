@@ -12,28 +12,20 @@ public class OutputLogger {
         writer = new BufferedWriter(new FileWriter(p.output()), 32768);
     }
 
-    public static void logDeliver(int senderId, List<Byte> data) {
+    public static void logDeliver(int senderId, List<Byte> data) throws IOException {
         synchronized (writer) {
-            try {
-                if(Main.running) {
-                    writer.write("d " + senderId + " " + NetworkInterface.bytesToInt(data));
-                    writer.newLine();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            if(Main.running) {
+                writer.write("d " + senderId + " " + NetworkInterface.bytesToInt(data));
+                writer.newLine();
             }
         }
     }
 
-    public static void logBroadcast(List<Byte> data) {
+    public static void logBroadcast(List<Byte> data) throws IOException {
         synchronized (writer) {
-            try {
-                if(Main.running) {
-                    writer.write("b " + NetworkInterface.bytesToInt(data));
-                    writer.newLine();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            if(Main.running) {
+                writer.write("b " + NetworkInterface.bytesToInt(data));
+                writer.newLine();
             }
         }
     }

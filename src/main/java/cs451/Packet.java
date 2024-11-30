@@ -120,10 +120,10 @@ public class Packet {
 
     public static Packet deserialize(byte[] byteArray, int length) {
         //System.out.println("Deserializing packet");
-        try{
-            if(length < 13) {
-                throw new Exception("Invalid packet size");
-            }
+        
+            // if(length < 13) {
+            //     throw new Exception("Invalid packet size");
+            // }
 
             ByteBuffer buffer = ByteBuffer.wrap(byteArray);
 
@@ -142,11 +142,11 @@ public class Packet {
             
             return packet;
 
-        } catch (Exception e) {
-            System.out.println("Failed to deserialize packet.");
-            e.printStackTrace();
-            return null;
-        }
+        // } catch (Exception e) {
+        //     System.out.println("Failed to deserialize packet.");
+        //     e.printStackTrace();
+        //     return null;
+        // }
         
     }
 
