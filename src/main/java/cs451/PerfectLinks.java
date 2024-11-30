@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -21,10 +22,13 @@ public class PerfectLinks {
     private static int[] hosts;
 
     private static PriorityBlockingQueue<Packet> waitingForAck;
+    private static ConcurrentHashMap<Packet, Integer> acked = new ConcurrentHashMap<>();
 
     static private List<AckKeeper> ackKeeperList;
 
     static int nRetrasmissions = 0;
+
+    private static final Object lock = new Object();
 
     static void begin(Parser p) {
         parser = p;
@@ -62,13 +66,17 @@ public class PerfectLinks {
         try {
             while (Main.running) {
                 Packet packet = waitingForAck.take();
+
+                if(acked.remove(packet) != null) {
+                    continue;
+                }
                 
                 Long actualTime = System.currentTimeMillis();
                 if (packet.getTimeout() <= actualTime) {
                     // System.out.println("retransmit Thread - Retransmitting packet with id: " + packet.getId() + "to target " + packet.getTargetID());
                     nRetrasmissions++;
 
-                    NetworkInterface.sendPacket(packet);
+                    NetworkInterface.sendPacket(packet);  
                     packet.backoff();
                     waitingForAck.put(packet);
 
@@ -93,8 +101,7 @@ public class PerfectLinks {
         Packet p = new Packet(data, parser.myId(), deliveryHost);
 
         sendingQueue.get(deliveryHost - 1).put(p);
-
-
+        
         if(sendingQueue.get(deliveryHost - 1).size() > maxQueueSize) {
             maxQueueSize = sendingQueue.get(deliveryHost - 1).size();
         }
@@ -103,17 +110,28 @@ public class PerfectLinks {
     private static void sendingThread() {
         try {
             while(Main.running) {
+                Boolean allEmpty = true;
                 for(int hostId : hosts) {
                     Queue<Packet> currentSendingQueue = sendingQueue.get(hostId - 1);
 
-                    if(windowSize.get(hostId - 1).get() <= WINDOW_MAX_SIZE && currentSendingQueue.size() > 0) {
+                    if(windowSize.get(hostId - 1).get() <= WINDOW_MAX_SIZE) {
                         Packet p = currentSendingQueue.poll();
+                        if(p == null)
+                            continue;
+
                         windowSize.get(hostId - 1).incrementAndGet();
                     
+                        allEmpty = false;
                         NetworkInterface.sendPacket(p);
                         p.setTimeout();
                         waitingForAck.put(p);
                     }
+                }
+                if(allEmpty) {
+                    Thread.sleep(10);
+                    // synchronized(lock) {
+                    //     lock.wait();
+                    // }
                 }
             }
         } catch (Exception e) {
@@ -126,17 +144,13 @@ public class PerfectLinks {
     public static void ackReceived(Packet packet) {
         int senderId = packet.getSenderID();
 
-        int ackedId = packet.getAckedIds();
+        packet.targetID = packet.getSenderID();
+        packet.id = packet.getAckedIds();
 
-        for( Packet p : waitingForAck) {
-            if(p.getTargetID() == senderId && p.getId() == ackedId) {
-                waitingForAck.remove(p);
-                break;
-            }
-        }
+        acked.put(packet, 0);
+
         windowSize.get(senderId - 1).decrementAndGet();
     }
-
 
     static double timeForLockAckReceived = 0.;
     static double maximumTimeForLockAckReceived = 0.;
@@ -145,10 +159,6 @@ public class PerfectLinks {
     static double timeFor = 0.;
     static double maximumTimeFor = 0.;
     static int nTimesFor = 0;
-
-
-    static final double ALPHA = 0.25;
-
 
     public static void receivedPacket(Packet packet) throws InterruptedException, IOException {
         // System.out.println("PerfectLinks receivedPacket called");
@@ -161,7 +171,7 @@ public class PerfectLinks {
         NetworkInterface.sendPacket(ackPacket);
 
         time = System.nanoTime() - time;
-        timeFor = ALPHA * time + (1 - ALPHA) * timeFor;
+        timeFor = NetworkInterface.ALPHA * time + (1 - NetworkInterface.ALPHA) * timeFor;
         if(time > maximumTimeFor) {
             maximumTimeFor = time;
         }
@@ -170,14 +180,12 @@ public class PerfectLinks {
         }
 
         if(ackKeeperList.get(senderId - 1).addAck(packet.getId())) {
-            // System.out.println("Not acked");    
             time = System.nanoTime();
 
-            //OutputLogger.logDeliver(packet.getSenderID(), packet.getData());
             FIFOUniformReliableBroadcast.receivePacket(packet.getSenderID(), packet.getData());
 
             time = System.nanoTime() - time;
-            timeForLockAckReceived = ALPHA * time + (1 - ALPHA) * timeForLockAckReceived;
+            timeForLockAckReceived = NetworkInterface.ALPHA * time + (1 - NetworkInterface.ALPHA) * timeForLockAckReceived;
             if(time > maximumTimeForLockAckReceived) {
                 maximumTimeForLockAckReceived = time;
             }

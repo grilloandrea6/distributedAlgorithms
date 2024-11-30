@@ -177,4 +177,20 @@ public class Packet {
         numberOfMessages++;
     }
 
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + targetID;
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Packet) {
+            Packet p = (Packet) obj;
+            return p.id == id && p.targetID == targetID;
+        }
+        return false;
+    }
+
 }

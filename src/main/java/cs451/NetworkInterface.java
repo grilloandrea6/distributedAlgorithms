@@ -20,7 +20,7 @@ public class NetworkInterface {
     static double maximumTimeForProcessPacket = 0.;
     static int timesOverMillisecondAckReceived = 0;
     static int timesOverMillisecondProcessPacket = 0;
-    static double ALPHA = 0.25;
+    public static double ALPHA = 0.001;
 
     public static void begin(Parser p) throws SocketException {
         parser = p;
