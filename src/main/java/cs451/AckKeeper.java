@@ -17,31 +17,47 @@ public class AckKeeper {
     }
 
     public boolean addAck(int ack) {
-        if (isAcked(ack))
+        if (isAcked(ack)) {
             return false;
-
-        if(nacks.contains(ack)) {
-            nacks.remove(ack);
-        } else if (ack == this.maximumInOrderAck + 1) {
-            this.maximumInOrderAck++;
-            removeAcks();
-        } else if(acks.size() >= MAXIMUM_ACK_SIZE) {
-            this.nacks.add(++this.maximumInOrderAck);
-            removeAcks();
-            addAck(ack);
-        } else {
-            this.acks.add(ack);
         }
-        return true;
+    
+        if (nacks.contains(ack)) {
+            nacks.remove(ack);
+            return true;
+        }
+
+        while (true) {
+            if (ack == this.maximumInOrderAck + 1) {
+                this.maximumInOrderAck++;
+                removeAcks();
+                return true;
+            }
+
+
+            if (acks.size() >= MAXIMUM_ACK_SIZE) {
+                this.nacks.add(++this.maximumInOrderAck);
+                removeAcks();
+                continue; 
+            }
+            
+            this.acks.add(ack);
+            return true;
+        }
     }
 
     private void removeAcks() {
-        for (int ack : acks) {
-            if (ack == this.maximumInOrderAck + 1) {
-                this.maximumInOrderAck++;
-                this.acks.remove(ack);
-                removeAcks();
-                return;
+        while (true) {
+            boolean ackFound = false;
+            for (int ack : acks) {
+                if (ack == this.maximumInOrderAck + 1) {
+                    this.maximumInOrderAck++;
+                    this.acks.remove(ack);
+                    ackFound = true;
+                    break; // Restart the loop to check for the next ack
+                }
+            }
+            if (!ackFound) {
+                break; // Exit the loop if no further acks are found
             }
         }
     }
