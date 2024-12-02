@@ -376,7 +376,7 @@ def main(parser_results, testConfig):
         # st.run()
 
         print("NOT RUNNING STRESS TEST")
-        time.sleep(10)
+        time.sleep(parser_results.time)
 
         print("StressTest is complete.")
 
@@ -452,6 +452,15 @@ if __name__ == "__main__":
             type=positive_int,
             dest="processes",
             help="Number of processes that broadcast",
+        )
+
+        subparser.add_argument(
+            "-t",
+            "--time",
+            required=True,
+            type=positive_int,
+            dest="time",
+            help="Time to run the test for",
         )
 
     for subparser in [parser_perfect, parser_fifo]:
