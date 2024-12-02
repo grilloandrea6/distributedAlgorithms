@@ -1,74 +1,34 @@
 package cs451;
 
-import java.util.Set;
-import java.util.HashSet;
+import java.util.TreeSet;
 
 public class AckKeeper {
-    private static final int MAXIMUM_ACK_SIZE = 20; // ToDo tune value
+    private int maximumInOrderAck = -1;
+    private TreeSet<Integer> acks = new TreeSet<>();
 
-    private int maximumInOrderAck;
-    private Set<Integer> acks;
-    private Set<Integer> nacks;
-
-    public AckKeeper() {
-        this.maximumInOrderAck = -1;
-        this.acks = new HashSet<>();
-        this.nacks = new HashSet<>();
-    }
-
+    public AckKeeper() {}
+    
     public boolean addAck(int ack) {
         if (isAcked(ack)) {
             return false;
         }
-    
-        if (nacks.contains(ack)) {
-            nacks.remove(ack);
-            return true;
-        }
 
-        while (true) {
-            if (ack == this.maximumInOrderAck + 1) {
-                this.maximumInOrderAck++;
-                removeAcks();
-                return true;
-            }
-
-
-            if (acks.size() >= MAXIMUM_ACK_SIZE) {
-                this.nacks.add(++this.maximumInOrderAck);
-                removeAcks();
-                continue; 
-            }
-            
-            this.acks.add(ack);
-            return true;
-        }
+        if (ack == this.maximumInOrderAck + 1) {
+            this.maximumInOrderAck++;
+            removeAcks();
+        } else this.acks.add(ack);
+        
+        return true;
     }
 
     private void removeAcks() {
-        while (true) {
-            boolean ackFound = false;
-            for (int ack : acks) {
-                if (ack == this.maximumInOrderAck + 1) {
-                    this.maximumInOrderAck++;
-                    this.acks.remove(ack);
-                    ackFound = true;
-                    break; // Restart the loop to check for the next ack
-                }
-            }
-            if (!ackFound) {
-                break; // Exit the loop if no further acks are found
-            }
+        while (!acks.isEmpty() && acks.first() == this.maximumInOrderAck + 1) {
+            this.maximumInOrderAck++;
+            this.acks.pollFirst();
         }
     }
 
     public boolean isAcked(int ack) {
-        if(nacks.contains(ack))
-            return false;
-        
-        if(ack <= this.maximumInOrderAck)
-            return true;
-        
-        return this.acks.contains(ack);
+                return ack <= this.maximumInOrderAck || this.acks.contains(ack);
     }
 }
