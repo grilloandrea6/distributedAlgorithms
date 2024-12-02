@@ -28,8 +28,6 @@ public class PerfectLinks {
 
     static int nRetrasmissions = 0;
 
-    private static final Object lock = new Object();
-
     static void begin(Parser p) {
         parser = p;
 
@@ -79,8 +77,6 @@ public class PerfectLinks {
                     NetworkInterface.sendPacket(packet);  
                     packet.backoff();
                     waitingForAck.put(packet);
-
-
                 } else {
                     // System.out.println("retransmit Thread - Not retransmitting packet with id: " + packet.getId() + "to target " + packet.getTargetID());
 
@@ -100,10 +96,12 @@ public class PerfectLinks {
     public static void perfectSend(List<Byte> data, int deliveryHost) throws InterruptedException {   
         Packet p = new Packet(data, parser.myId(), deliveryHost);
 
-        sendingQueue.get(deliveryHost - 1).put(p);
+        BlockingQueue<Packet> q = sendingQueue.get(deliveryHost - 1);
+
+        q.put(p);
         
-        if(sendingQueue.get(deliveryHost - 1).size() > maxQueueSize) {
-            maxQueueSize = sendingQueue.get(deliveryHost - 1).size();
+        if(q.size() > maxQueueSize) {
+            maxQueueSize = q.size();
         }
     }
 
@@ -129,9 +127,6 @@ public class PerfectLinks {
                 }
                 if(allEmpty) {
                     Thread.sleep(10);
-                    // synchronized(lock) {
-                    //     lock.wait();
-                    // }
                 }
             }
         } catch (Exception e) {

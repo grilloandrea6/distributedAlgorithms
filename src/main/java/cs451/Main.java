@@ -117,7 +117,7 @@ public class Main {
 
         FIFOUniformReliableBroadcast.begin(parser);
         
-        Thread.sleep(2000); //ToDo remove
+        // Thread.sleep(20); //ToDo remove
 
         try {
             for(int i = 1; i <= nMessages; i++) {
