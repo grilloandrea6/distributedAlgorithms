@@ -27,7 +27,9 @@ public class Packet {
 
     private Long timeout;
 
-    private Long creationTime;
+    Long creationTime;
+
+    boolean hasBeenRetransmitted = false;
 
     Packet() {
         creationTime = System.currentTimeMillis();
