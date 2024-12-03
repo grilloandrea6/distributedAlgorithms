@@ -3,7 +3,6 @@ package cs451;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.SocketException;
 import java.util.List;
 
 public class Main {
@@ -18,26 +17,12 @@ public class Main {
 
 
         
-        System.err.printf("| %2d  | %12.3f us | %12.0f us | %10d times | %12.3f us | %12.0f us | %10d times | %12.3f us | %12.0f us | %10d times | %10d maxSize| retr %4d |\n", 
+        System.err.printf("| %2d  | %5d maxSendingQueueSize | %5d nRetr | %5.3f estRTT | %5d ackKeeper maxAcksSize |\n", 
             parser.myId(),
-            NetworkInterface.timeForAckReceived / 1000.0, 
-            NetworkInterface.maximumTimeForAckReceived / 1000.0, 
-            NetworkInterface.timesOverMillisecondAckReceived,
-            NetworkInterface.timeForProcessPacket / 1000.0,
-            NetworkInterface.maximumTimeForProcessPacket / 1000.0,
-            NetworkInterface.timesOverMillisecondProcessPacket,
-
-            // PerfectLinks.timeForLockAckReceived / 1000.0,
-            // PerfectLinks.maximumTimeForLockAckReceived / 1000.0,
-            // PerfectLinks.nTimesOverMillisecond,
-            
-            PerfectLinks.timeFor /1000.0,
-            PerfectLinks.maximumTimeFor/1000.0 ,
-            PerfectLinks.nTimesFor,
-        
-
             PerfectLinks.maxQueueSize,
-            PerfectLinks.nRetrasmissions);
+            PerfectLinks.nRetrasmissions,
+            PerfectLinks.estimatedRTT,
+            AckKeeper.maxAcksSize);
 
         
 

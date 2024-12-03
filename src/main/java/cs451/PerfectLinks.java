@@ -154,46 +154,16 @@ public class PerfectLinks {
         windowSize.get(senderId - 1).decrementAndGet();
     }
 
-    static double timeForLockAckReceived = 0.;
-    static double maximumTimeForLockAckReceived = 0.;
-    static int nTimesOverMillisecond = 0;
-
-    static double timeFor = 0.;
-    static double maximumTimeFor = 0.;
-    static int nTimesFor = 0;
-
     public static void receivedPacket(Packet packet) throws InterruptedException, IOException {
         // System.out.println("PerfectLinks receivedPacket called");
         int senderId = packet.getSenderID();
 
         Packet ackPacket = Packet.createAckPacket(packet);
 
-        long time = System.nanoTime();
-
         NetworkInterface.sendPacket(ackPacket);
 
-        time = System.nanoTime() - time;
-        timeFor = NetworkInterface.ALPHA * time + (1 - NetworkInterface.ALPHA) * timeFor;
-        if(time > maximumTimeFor) {
-            maximumTimeFor = time;
-        }
-        if(time > 1000000) {
-            nTimesFor++;
-        }
-
         if(ackKeeperList.get(senderId - 1).addAck(packet.getId())) {
-            time = System.nanoTime();
-
             FIFOUniformReliableBroadcast.receivePacket(packet.getSenderID(), packet.getData());
-
-            time = System.nanoTime() - time;
-            timeForLockAckReceived = NetworkInterface.ALPHA * time + (1 - NetworkInterface.ALPHA) * timeForLockAckReceived;
-            if(time > maximumTimeForLockAckReceived) {
-                maximumTimeForLockAckReceived = time;
-            }
-            if(time > 1000000) {
-                nTimesOverMillisecond++;
-            }
         }
 
 

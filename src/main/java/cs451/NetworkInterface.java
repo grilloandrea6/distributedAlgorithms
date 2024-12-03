@@ -14,13 +14,6 @@ public class NetworkInterface {
     public static Parser parser;
 
     private static DatagramSocket socketReceive, socketSend;
-    static double timeForAckReceived = 0.;
-    static double timeForProcessPacket = 0.;
-    static double maximumTimeForAckReceived = 0.;
-    static double maximumTimeForProcessPacket = 0.;
-    static int timesOverMillisecondAckReceived = 0;
-    static int timesOverMillisecondProcessPacket = 0;
-    public static double ALPHA = 0.001;
 
     public static void begin(Parser p) throws SocketException {
         parser = p;
@@ -44,28 +37,10 @@ public class NetworkInterface {
                 Packet p = Packet.deserialize(datagramPacket.getData(), datagramPacket.getLength());
                 if (p != null) {
                     if(p.isAckPacket()) {
-                        long time = System.nanoTime();
                         PerfectLinks.ackReceived(p);
-                        time = System.nanoTime() - time;
-                        timeForAckReceived = ALPHA * time + (1 - ALPHA) * timeForAckReceived;
-                        if(time > maximumTimeForAckReceived) {
-                            maximumTimeForAckReceived = time;
-                        }
-                        if(time > 1000000) {
-                            timesOverMillisecondAckReceived++;
-                        }
                     }
                     else {
-                        long time = System.nanoTime();
                         PerfectLinks.receivedPacket(p);
-                        time = System.nanoTime() - time;
-                        timeForProcessPacket = ALPHA * time + (1 - ALPHA) * timeForProcessPacket;
-                        if(time > maximumTimeForProcessPacket) {
-                            maximumTimeForProcessPacket = time;
-                        }
-                        if(time > 1000000) {
-                            timesOverMillisecondProcessPacket++;
-                        }
                     }
                 } else System.err.println("Invalid packet received!");
             }   
