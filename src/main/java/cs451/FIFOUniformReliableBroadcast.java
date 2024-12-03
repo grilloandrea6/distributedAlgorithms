@@ -15,7 +15,7 @@ public class FIFOUniformReliableBroadcast {
     static final int MAX_WINDOW_SIZE = 5;
     static int windowSize = 0;
 
-    static List<FIFOKeeper> delivered;
+    static FIFOKeeper[] delivered;
 
     // pending
     static ConcurrentHashMap<FIFOUrbPacket, FIFOUrbPacket> pending = new ConcurrentHashMap<>();
@@ -25,9 +25,9 @@ public class FIFOUniformReliableBroadcast {
         hostNumber = p.hosts().size();
         myId = p.myId();
 
-        delivered = new ArrayList<>(hostNumber);
+        delivered = new FIFOKeeper[hostNumber];
         for(int i = 0; i < hostNumber; i++) {
-            delivered.add(new FIFOKeeper());
+            delivered[i] = new FIFOKeeper();
         }
         PerfectLinks.begin(p);
     }
@@ -73,7 +73,7 @@ public class FIFOUniformReliableBroadcast {
     static void receivePacket(int senderId, List<Byte> data) throws InterruptedException, IOException {        
         FIFOUrbPacket packet = FIFOUrbPacket.deserialize(data, senderId);
 
-        if(!delivered.get(packet.origSender - 1).isDelivered(packet)) {
+        if(!delivered[packet.origSender - 1].isDelivered(packet)) {
 
             if(!pending.containsKey(packet)) {
                 // System.out.println("\tAdding to pending and broadcasting");
@@ -85,7 +85,7 @@ public class FIFOUniformReliableBroadcast {
                 p.ackReceived++;
 
                 if(p.ackReceived >= hostNumber/2) {
-                    delivered.get(packet.origSender - 1).addMessage(packet);
+                    delivered[packet.origSender - 1].addMessage(packet);
                     pending.remove(packet);
 
                     if(packet.origSender == myId) {

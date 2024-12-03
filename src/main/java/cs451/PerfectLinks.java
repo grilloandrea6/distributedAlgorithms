@@ -14,8 +14,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PerfectLinks {
     static Parser parser;
 
-    private static List<AtomicInteger> windowSize;
-    private static List<BlockingQueue<Packet>> sendingQueue;
+    private static AtomicInteger[] windowSize;
+    private static ArrayBlockingQueue<Packet>[] sendingQueue;
+    private static AckKeeper[] ackKeeperList;
 
     public final static int WINDOW_MAX_SIZE = 5; // ToDo mmmmm
 
@@ -23,8 +24,6 @@ public class PerfectLinks {
 
     private static PriorityBlockingQueue<Packet> waitingForAck;
     private static ConcurrentHashMap<Packet, Long> acked = new ConcurrentHashMap<>();
-
-    static private List<AckKeeper> ackKeeperList;
 
     static double estimatedRTT = 100.0; // Initial RTT estimate in ms
     private static final double ALPHA = 0.125; // Smoothing factor for EMA
@@ -38,14 +37,14 @@ public class PerfectLinks {
 
         waitingForAck = new PriorityBlockingQueue<Packet>(hosts.length * WINDOW_MAX_SIZE, (p1, p2) -> p1.getTimeout().compareTo(p2.getTimeout()));
 
-        windowSize = new ArrayList<>(hosts.length);
-        sendingQueue = new ArrayList<>(hosts.length);
-        ackKeeperList = new ArrayList<>(hosts.length);
+        windowSize = new AtomicInteger[hosts.length];
+        sendingQueue = new ArrayBlockingQueue[hosts.length];
+        ackKeeperList = new AckKeeper[hosts.length];
 
         for(int i = 0; i < hosts.length; i++) {
-            windowSize.add(new AtomicInteger(0));
-            sendingQueue.add(new ArrayBlockingQueue<>(1200));
-            ackKeeperList.add(new AckKeeper());
+            windowSize[i] = new AtomicInteger(0);
+            sendingQueue[i] = new ArrayBlockingQueue<>(1200);
+            ackKeeperList[i] = new AckKeeper();
         }
 
         try {
@@ -103,7 +102,7 @@ public class PerfectLinks {
     public static void perfectSend(List<Byte> data, int deliveryHost) throws InterruptedException {   
         Packet p = new Packet(data, parser.myId(), deliveryHost);
 
-        BlockingQueue<Packet> q = sendingQueue.get(deliveryHost - 1);
+        BlockingQueue<Packet> q = sendingQueue[deliveryHost - 1];
 
         q.put(p);
         
@@ -117,14 +116,14 @@ public class PerfectLinks {
             while(Main.running) {
                 Boolean allEmpty = true;
                 for(int hostId : hosts) {
-                    Queue<Packet> currentSendingQueue = sendingQueue.get(hostId - 1);
+                    Queue<Packet> currentSendingQueue = sendingQueue[hostId - 1];
 
-                    if(windowSize.get(hostId - 1).get() <= WINDOW_MAX_SIZE) {
+                    if(windowSize[hostId - 1].get() <= WINDOW_MAX_SIZE) {
                         Packet p = currentSendingQueue.poll();
                         if(p == null)
                             continue;
 
-                        windowSize.get(hostId - 1).incrementAndGet();
+                        windowSize[hostId - 1].incrementAndGet();
                     
                         allEmpty = false;
                         NetworkInterface.sendPacket(p);
@@ -151,7 +150,7 @@ public class PerfectLinks {
 
         acked.put(packet, System.currentTimeMillis());
 
-        windowSize.get(senderId - 1).decrementAndGet();
+        windowSize[senderId - 1].decrementAndGet();
     }
 
     public static void receivedPacket(Packet packet) throws InterruptedException, IOException {
@@ -162,11 +161,8 @@ public class PerfectLinks {
 
         NetworkInterface.sendPacket(ackPacket);
 
-        if(ackKeeperList.get(senderId - 1).addAck(packet.getId())) {
+        if(ackKeeperList[senderId - 1].addAck(packet.getId())) {
             FIFOUniformReliableBroadcast.receivePacket(packet.getSenderID(), packet.getData());
         }
-
-
-
     }
 }
