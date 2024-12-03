@@ -17,11 +17,11 @@ public class Main {
 
 
         
-        System.err.printf("| %2d  | %5d maxSendingQueueSize | %5d nRetr | %5d estRTT | %5d ackKeeper maxAcksSize |\n", 
+        System.err.printf("| %2d  | %5d maxSendingQueueSize | %5d nRetr | neiin estRTT | %5d ackKeeper maxAcksSize |\n", 
             parser.myId(),
             PerfectLinks.maxQueueSize,
             PerfectLinks.nRetrasmissions,
-            PerfectLinks.estimatedRTT,
+            //PerfectLinks.estimatedRTT,
             AckKeeper.maxAcksSize);
 
         

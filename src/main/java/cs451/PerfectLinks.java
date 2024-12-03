@@ -5,6 +5,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,10 +24,11 @@ public class PerfectLinks {
     private static int nHosts;
 
     private static PriorityBlockingQueue<Packet> waitingForAck;
-    private static ConcurrentHashMap<Packet, Long> acked = new ConcurrentHashMap<>();
+    //private static ConcurrentHashMap<Packet, Integer> acked = new ConcurrentHashMap<>();
+    private static Set<Packet> acked = ConcurrentHashMap.newKeySet();
 
-    static long estimatedRTT = 100; // Initial RTT estimate in ms
-    private static final double ALPHA = 0.00125; // Smoothing factor for EMA
+    // static long estimatedRTT = 100; // Initial RTT estimate in ms
+    // private static final double ALPHA = 0.00125; // Smoothing factor for EMA
 
     static int nRetrasmissions = 0;
 
@@ -66,11 +68,8 @@ public class PerfectLinks {
         try {
             while (Main.running) {
                 Packet packet = waitingForAck.take();
-                Long ackedTime = acked.remove(packet);
-                if(ackedTime != null) {
-                    if(!packet.hasBeenRetransmitted) {
-                        estimatedRTT = (long) (ALPHA * (ackedTime - packet.creationTime) + (1 - ALPHA) * estimatedRTT); // Update RTT estimate
-                    }
+                
+                if(acked.remove(packet)) {
                     continue;
                 }
                 
@@ -78,7 +77,6 @@ public class PerfectLinks {
                 if (packet.getTimeout() <= actualTime) {
                     // System.out.println("retransmit Thread - Retransmitting packet with id: " + packet.getId() + "to target " + packet.getTargetID());
                     nRetrasmissions++;
-                    packet.hasBeenRetransmitted = true;
 
                     NetworkInterface.sendPacket(packet);  
                     packet.backoff();
@@ -148,7 +146,7 @@ public class PerfectLinks {
         packet.targetID = packet.getSenderID();
         packet.id = packet.getAckedIds();
 
-        acked.put(packet, System.currentTimeMillis());
+        acked.add(packet);
 
         windowSize[senderId - 1].decrementAndGet();
     }

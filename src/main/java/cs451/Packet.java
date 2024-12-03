@@ -29,8 +29,6 @@ public class Packet {
 
     Long creationTime;
 
-    boolean hasBeenRetransmitted = false;
-
     Packet() {
         creationTime = System.currentTimeMillis();
     }
@@ -61,8 +59,8 @@ public class Packet {
 
     public void backoff() {
         // System.out.println("Backoff called - interval: " + interval);
+        //interval = interval > 500L ? 1000L : interval * 2;
         interval = Math.min(interval * 2, 1000L);
-        //interval *= 2;
         timeout = System.currentTimeMillis() + interval;
     }
 
