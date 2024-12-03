@@ -25,7 +25,7 @@ public class PerfectLinks {
 
     private static PriorityBlockingQueue<Packet> waitingForAck;
     //private static ConcurrentHashMap<Packet, Integer> acked = new ConcurrentHashMap<>();
-    private static Set<Packet> acked = ConcurrentHashMap.newKeySet(8000);
+    //private static Set<Packet> acked = ConcurrentHashMap.newKeySet(8000);
 
     // static long estimatedRTT = 100; // Initial RTT estimate in ms
     // private static final double ALPHA = 0.00125; // Smoothing factor for EMA
@@ -69,9 +69,9 @@ public class PerfectLinks {
             while (Main.running) {
                 Packet packet = waitingForAck.take();
                 
-                if(acked.remove(packet)) {
-                    continue;
-                }
+                // if(acked.remove(packet)) {
+                //     continue;
+                // }
                 
                 Long actualTime = System.currentTimeMillis();
                 if (packet.getTimeout() <= actualTime) {
@@ -148,7 +148,8 @@ public class PerfectLinks {
         packet.targetID = packet.getSenderID();
         packet.id = packet.getAckedIds();
 
-        acked.add(packet);
+        waitingForAck.remove(packet);
+        //acked.add(packet);
 
         // if(maxNacked < acked.size()) {
         //     maxNacked = acked.size();
