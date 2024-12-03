@@ -25,8 +25,8 @@ public class PerfectLinks {
     private static PriorityBlockingQueue<Packet> waitingForAck;
     private static ConcurrentHashMap<Packet, Long> acked = new ConcurrentHashMap<>();
 
-    static double estimatedRTT = 100.0; // Initial RTT estimate in ms
-    private static final double ALPHA = 0.125; // Smoothing factor for EMA
+    static long estimatedRTT = 100; // Initial RTT estimate in ms
+    private static final double ALPHA = 0.00125; // Smoothing factor for EMA
 
     static int nRetrasmissions = 0;
 
@@ -69,7 +69,7 @@ public class PerfectLinks {
                 Long ackedTime = acked.remove(packet);
                 if(ackedTime != null) {
                     if(!packet.hasBeenRetransmitted) {
-                        estimatedRTT = ALPHA * (ackedTime - packet.creationTime) + (1 - ALPHA) * estimatedRTT; // Update RTT estimate
+                        estimatedRTT = (long) (ALPHA * (ackedTime - packet.creationTime) + (1 - ALPHA) * estimatedRTT); // Update RTT estimate
                     }
                     continue;
                 }
