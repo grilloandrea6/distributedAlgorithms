@@ -20,7 +20,7 @@ public class PerfectLinks {
 
     public final static int WINDOW_MAX_SIZE = 5; // ToDo mmmmm
 
-    private static int[] hosts;
+    private static int nHosts;
 
     private static PriorityBlockingQueue<Packet> waitingForAck;
     private static ConcurrentHashMap<Packet, Long> acked = new ConcurrentHashMap<>();
@@ -33,15 +33,15 @@ public class PerfectLinks {
     static void begin(Parser p) {
         parser = p;
 
-        hosts = parser.hosts().stream().map(Host::getId).mapToInt(Integer::intValue).toArray();
+        nHosts = parser.hosts().size();
 
-        waitingForAck = new PriorityBlockingQueue<Packet>(hosts.length * WINDOW_MAX_SIZE, (p1, p2) -> p1.getTimeout().compareTo(p2.getTimeout()));
+        waitingForAck = new PriorityBlockingQueue<Packet>(nHosts * WINDOW_MAX_SIZE, (p1, p2) -> p1.getTimeout().compareTo(p2.getTimeout()));
 
-        windowSize = new AtomicInteger[hosts.length];
-        sendingQueue = new ArrayBlockingQueue[hosts.length];
-        ackKeeperList = new AckKeeper[hosts.length];
+        windowSize = new AtomicInteger[nHosts];
+        sendingQueue = new ArrayBlockingQueue[nHosts];
+        ackKeeperList = new AckKeeper[nHosts];
 
-        for(int i = 0; i < hosts.length; i++) {
+        for(int i = 0; i < nHosts; i++) {
             windowSize[i] = new AtomicInteger(0);
             sendingQueue[i] = new ArrayBlockingQueue<>(1200);
             ackKeeperList[i] = new AckKeeper();
@@ -115,7 +115,7 @@ public class PerfectLinks {
         try {
             while(Main.running) {
                 Boolean allEmpty = true;
-                for(int hostId : hosts) {
+                for(int hostId = 1; hostId <= nHosts; hostId++) {
                     Queue<Packet> currentSendingQueue = sendingQueue[hostId - 1];
 
                     if(windowSize[hostId - 1].get() <= WINDOW_MAX_SIZE) {
