@@ -20,9 +20,9 @@ public class NetworkInterface {
 
         int port = parser.hosts().get(parser.myId() - 1).getPort();
 
-        System.out.println("My ID: " + parser.myId() + " - Port:" + port);
+        // System.out.println("My ID: " + parser.myId() + " - Port:" + port);
         socketReceive = new DatagramSocket(port);
-        System.out.println("Listening socket created on port " + port);
+        // System.out.println("Listening socket created on port " + port);
         socketSend = new DatagramSocket();
 
         new Thread(NetworkInterface::receivePackets).start();
@@ -48,7 +48,7 @@ public class NetworkInterface {
             e.printStackTrace();
         }
     
-        System.out.println("NetworkInterface - Exiting receivePackets thread");
+        // System.out.println("NetworkInterface - Exiting receivePackets thread");
     } 
 
     public static void sendPacket(Packet packet) throws IOException {

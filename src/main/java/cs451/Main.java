@@ -13,21 +13,22 @@ public class Main {
     private static void handleSignal() {
         //immediately stop network packet processing
         running = false;
-        System.out.println("Immediately stopping network packet processing.");
+        // System.out.println("Immediately stopping network packet processing.");
 
 
         
-        System.err.printf("| %2d  | %5d maxSendingQueueSize | %5d nRetr | neiin estRTT | %5d ackKeeper maxAcksSize |\n", 
-            parser.myId(),
-            PerfectLinks.maxQueueSize,
-            PerfectLinks.nRetrasmissions,
-            //PerfectLinks.estimatedRTT,
-            AckKeeper.maxAcksSize);
+        // System.err.printf("| %2d  | %5d maxSendingQueueSize | %5d nRetr | %5d maxNAcked | %5d ackKeeper maxAcksSize |\n", 
+        //     parser.myId(),
+        //     PerfectLinks.maxQueueSize,
+        //     PerfectLinks.nRetrasmissions,
+        //     //PerfectLinks.estimatedRTT,
+        //     PerfectLinks.maxNacked,
+        //     AckKeeper.maxAcksSize);
 
         
 
         //write/flush output file if necessary
-        System.out.println("Writing output.");
+        // System.out.println("Writing output.");
         try {
             OutputLogger.end();
         } catch (IOException e) {
@@ -51,30 +52,30 @@ public class Main {
         initSignalHandlers();
 
         // example
-        long pid = ProcessHandle.current().pid();
-        System.out.println("My PID: " + pid + "\n");
-        System.out.println("From a new terminal type `kill -SIGINT " + pid + "` or `kill -SIGTERM " + pid + "` to stop processing packets\n");
+        // long pid = ProcessHandle.current().pid();
+        // System.out.println("My PID: " + pid + "\n");
+        // System.out.println("From a new terminal type `kill -SIGINT " + pid + "` or `kill -SIGTERM " + pid + "` to stop processing packets\n");
 
-        System.out.println("My ID: " + parser.myId() + "\n");
-        System.out.println("List of resolved hosts is:");
-        System.out.println("==========================");
-        for (Host host: parser.hosts()) {
-            System.out.println(host.getId());
-            System.out.println("Human-readable IP: " + host.getIp());
-            System.out.println("Human-readable Port: " + host.getPort());
-            System.out.println();
-        }
-        System.out.println();
+        // System.out.println("My ID: " + parser.myId() + "\n");
+        // System.out.println("List of resolved hosts is:");
+        // System.out.println("==========================");
+        // for (Host host: parser.hosts()) {
+        //     System.out.println(host.getId());
+        //     System.out.println("Human-readable IP: " + host.getIp());
+        //     System.out.println("Human-readable Port: " + host.getPort());
+        //     System.out.println();
+        // }
+        // System.out.println();
 
-        System.out.println("Path to output:");
-        System.out.println("===============");
-        System.out.println(parser.output() + "\n");
+        // System.out.println("Path to output:");
+        // System.out.println("===============");
+        // System.out.println(parser.output() + "\n");
 
-        System.out.println("Path to config:");
-        System.out.println("===============");
-        System.out.println(parser.config() + "\n");
+        // System.out.println("Path to config:");
+        // System.out.println("===============");
+        // System.out.println(parser.config() + "\n");
 
-        System.out.println("Doing some initialization\n");
+        // System.out.println("Doing some initialization\n");
 
         int nMessages;
         try {
@@ -84,21 +85,21 @@ public class Main {
             return;
         }
 
-        System.out.println("Reading config file...");
-        System.out.println("I am host " + parser.myId() + ".");
+        // System.out.println("Reading config file...");
+        // System.out.println("I am host " + parser.myId() + ".");
         try {
             BufferedReader configReader = new BufferedReader(new FileReader(parser.config()));
             String config[] = configReader.readLine().split("\\s");
             nMessages = Integer.parseInt(config[0]);
             configReader.close();
-            System.out.println("I will broadcast " + nMessages + " messages.");
+            // System.out.println("I will broadcast " + nMessages + " messages.");
 
         } catch (IOException e) {
             System.err.println("Error reading config file: " + e.getMessage());
             return;
         }
 
-        System.out.println("\nBroadcasting and delivering messages...\n");
+        // System.out.println("\nBroadcasting and delivering messages...\n");
 
         FIFOUniformReliableBroadcast.begin(parser);
         
@@ -106,7 +107,7 @@ public class Main {
 
         try {
             for(int i = 1; i <= nMessages; i++) {
-                System.out.println("Main - Broadcasting message " + i);
+                // System.out.println("Main - Broadcasting message " + i);
                 List<Byte> data = NetworkInterface.intToBytes(i);
                 FIFOUniformReliableBroadcast.broadcast(data);
             }

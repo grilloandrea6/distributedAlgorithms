@@ -30,7 +30,7 @@ public class PerfectLinks {
     // static long estimatedRTT = 100; // Initial RTT estimate in ms
     // private static final double ALPHA = 0.00125; // Smoothing factor for EMA
 
-    static int nRetrasmissions = 0;
+    // static int nRetrasmissions = 0;
 
     static void begin(Parser p) {
         parser = p;
@@ -76,7 +76,7 @@ public class PerfectLinks {
                 Long actualTime = System.currentTimeMillis();
                 if (packet.getTimeout() <= actualTime) {
                     // System.out.println("retransmit Thread - Retransmitting packet with id: " + packet.getId() + "to target " + packet.getTargetID());
-                    nRetrasmissions++;
+                    //nRetrasmissions++;
 
                     NetworkInterface.sendPacket(packet);  
                     packet.backoff();
@@ -92,10 +92,10 @@ public class PerfectLinks {
             e.printStackTrace();
         }
         
-        System.out.println("Exiting retransmit thread");
+        // System.out.println("Exiting retransmit thread");
     }
 
-    static int maxQueueSize = 0;
+    // static int maxQueueSize = 0;
 
     public static void perfectSend(List<Byte> data, int deliveryHost) throws InterruptedException {   
         Packet p = new Packet(data, parser.myId(), deliveryHost);
@@ -104,9 +104,9 @@ public class PerfectLinks {
 
         q.put(p);
         
-        if(q.size() > maxQueueSize) {
-            maxQueueSize = q.size();
-        }
+        // if(q.size() > maxQueueSize) {
+        //     maxQueueSize = q.size();
+        // }
     }
 
     private static void sendingThread() {
@@ -137,8 +137,10 @@ public class PerfectLinks {
             e.printStackTrace();
         }
         
-        System.out.println("Exiting sending thread");
+        // System.out.println("Exiting sending thread");
     }
+
+    // static int maxNacked = 0;
 
     public static void ackReceived(Packet packet) {
         int senderId = packet.getSenderID();
@@ -147,6 +149,10 @@ public class PerfectLinks {
         packet.id = packet.getAckedIds();
 
         acked.add(packet);
+
+        // if(maxNacked < acked.size()) {
+        //     maxNacked = acked.size();
+        // }
 
         windowSize[senderId - 1].decrementAndGet();
     }
