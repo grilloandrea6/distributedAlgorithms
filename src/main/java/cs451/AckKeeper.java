@@ -17,7 +17,7 @@ public class AckKeeper {
 
         if (ack == this.maximumInOrderAck + 1) {
             this.maximumInOrderAck++;
-            removeAcks();
+            if(!acks.isEmpty()) removeAcks();
         } else this.acks.add(ack);
 
         // maxAcksSize = Math.max(maxAcksSize, this.acks.size());
