@@ -41,7 +41,7 @@ public class PerfectLinks {
 
         for(int i = 0; i < hosts.length; i++) {
             windowSize.add(new AtomicInteger(0));
-            sendingQueue.add(new ArrayBlockingQueue<>(800));
+            sendingQueue.add(new ArrayBlockingQueue<>(1200));
             ackKeeperList.add(new AckKeeper());
         }
 
