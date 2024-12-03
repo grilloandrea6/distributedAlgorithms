@@ -31,6 +31,8 @@ public class OutputLogger {
     }
 
     public static void end() throws IOException {
+        if(writer == null) return;
+        
         synchronized (writer) {
             System.out.println("OutputLogger closing file");
             writer.flush();
