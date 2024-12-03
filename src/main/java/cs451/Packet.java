@@ -38,7 +38,7 @@ public class Packet {
     Packet(List<Byte> data, int senderID, int targetID) {
         this.data = new ArrayList<>(MAX_PACKET_SIZE);
 
-        this.data.add((byte)data.size());
+        //this.data.add((byte)data.size());
         this.data.addAll(data);
 
         this.numberOfMessages = 1;
@@ -122,35 +122,22 @@ public class Packet {
     }
 
     public static Packet deserialize(byte[] byteArray, int length) {
-        //System.out.println("Deserializing packet");
+        ByteBuffer buffer = ByteBuffer.wrap(byteArray);
+
+        Packet packet = new Packet();
+        packet.data = new ArrayList<>(byteArray.length - 9);
         
-            // if(length < 13) {
-            //     throw new Exception("Invalid packet size");
-            // }
-
-            ByteBuffer buffer = ByteBuffer.wrap(byteArray);
-
-            Packet packet = new Packet();
-            packet.data = new ArrayList<>(byteArray.length - 9);
-            
-            // Deserialize fields
-            packet.id = buffer.getInt();                         // 4 bytes
-            packet.senderID = buffer.getInt();                   // 4 bytes
-            packet.isAckPacket = buffer.get() == 1;              // 1 byte for boolean
-            packet.targetID = NetworkInterface.parser.myId();
-            
-            for(length -= 9; length > 0; length--) {
-                packet.data.add(buffer.get());
-            }
-            
-            return packet;
-
-        // } catch (Exception e) {
-        //     System.out.println("Failed to deserialize packet.");
-        //     e.printStackTrace();
-        //     return null;
-        // }
+        // Deserialize fields
+        packet.id = buffer.getInt();                         // 4 bytes
+        packet.senderID = buffer.getInt();                   // 4 bytes
+        packet.isAckPacket = buffer.get() == 1;              // 1 byte for boolean
+        packet.targetID = NetworkInterface.parser.myId();
         
+        for(length -= 9; length > 0; length--) {
+            packet.data.add(buffer.get());
+        }
+        
+        return packet;
     }
 
     public static Packet createAckPacket(Packet p) {

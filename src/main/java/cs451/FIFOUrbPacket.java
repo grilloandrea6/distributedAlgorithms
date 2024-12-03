@@ -42,7 +42,7 @@ public class FIFOUrbPacket {
 
             FIFOUrbPacket packet = new FIFOUrbPacket();
 
-            data.remove(0); //length of the message
+            //data.remove(0); //length of the message
 
             packet.origSender = data.get(0);
             packet.seq = NetworkInterface.bytesToInt(data.subList(1, 5));
