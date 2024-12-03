@@ -25,7 +25,7 @@ public class PerfectLinks {
 
     private static PriorityBlockingQueue<Packet> waitingForAck;
     //private static ConcurrentHashMap<Packet, Integer> acked = new ConcurrentHashMap<>();
-    private static Set<Packet> acked = ConcurrentHashMap.newKeySet();
+    private static Set<Packet> acked = ConcurrentHashMap.newKeySet(8000);
 
     // static long estimatedRTT = 100; // Initial RTT estimate in ms
     // private static final double ALPHA = 0.00125; // Smoothing factor for EMA
