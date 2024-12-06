@@ -56,7 +56,7 @@ public class Packet {
 
     public void backoff() {
         // System.out.println("Backoff called - interval: " + interval);
-        interval = Math.min(interval * 2, 1000L);
+        //interval = Math.min(interval * 2, 1000L);
         timeout = System.currentTimeMillis() + interval;
     }
 
