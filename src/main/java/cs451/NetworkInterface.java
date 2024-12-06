@@ -6,7 +6,6 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
@@ -56,7 +55,7 @@ public class NetworkInterface {
         InetSocketAddress targetAddress = new InetSocketAddress(targetHost.getIp(), targetHost.getPort());
   
         byte[] data = packet.serialize();
-        socketSend.send(new DatagramPacket(Arrays.copyOf(data, data.length), data.length, targetAddress)); //ToDo do i really need the copy?
+        socketSend.send(new DatagramPacket(data, data.length, targetAddress));
     }
 
     public static final List<Byte> intToBytes(int number) {
