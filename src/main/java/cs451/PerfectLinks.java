@@ -51,15 +51,15 @@ public class PerfectLinks {
     private static void retransmitThread() {
         try {
             while (Main.running) {
-                Packet packet = waitingForAck.take();
-                
                 Long actualTime = System.currentTimeMillis();
+                Packet packet = waitingForAck.take();
+
                 if (packet.getTimeout() <= actualTime) {
                     // System.out.println("retransmit Thread - Retransmitting packet with id: " + packet.getId() + "to target " + packet.getTargetID());
 
-                    NetworkInterface.sendPacket(packet);  
                     packet.backoff();
                     waitingForAck.put(packet);
+                    NetworkInterface.sendPacket(packet);  
                 } else {
                     // System.out.println("retransmit Thread - Not retransmitting packet with id: " + packet.getId() + "to target " + packet.getTargetID());
 
@@ -114,9 +114,8 @@ public class PerfectLinks {
         packet.targetID = packet.getSenderID();
         packet.id = packet.getAckedIds();
 
-        waitingForAck.remove(packet);
-
-        windowSize[senderId - 1].decrementAndGet();
+        if(waitingForAck.remove(packet))
+            windowSize[senderId - 1].decrementAndGet();
     }
 
     public static void receivedPacket(Packet packet) throws InterruptedException, IOException {
