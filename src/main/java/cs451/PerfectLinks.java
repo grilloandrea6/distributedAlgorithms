@@ -16,7 +16,7 @@ public class PerfectLinks {
     static Parser parser;
 
     private static AtomicInteger[] windowSize;
-    private static ArrayBlockingQueue<Packet>[] sendingQueue;
+    private static LockFreeRingBuffer<Packet>[] sendingQueue;
     private static AckKeeper[] ackKeeperList;
 
     public final static int WINDOW_MAX_SIZE = 5; // ToDo mmmmm
@@ -33,12 +33,12 @@ public class PerfectLinks {
         waitingForAck = new PriorityBlockingQueue<Packet>(nHosts * WINDOW_MAX_SIZE, (p1, p2) -> p1.getTimeout().compareTo(p2.getTimeout()));
 
         windowSize = new AtomicInteger[nHosts];
-        sendingQueue = new ArrayBlockingQueue[nHosts];
+        sendingQueue = new LockFreeRingBuffer[nHosts];
         ackKeeperList = new AckKeeper[nHosts];
 
         for(int i = 0; i < nHosts; i++) {
             windowSize[i] = new AtomicInteger(0);
-            sendingQueue[i] = new ArrayBlockingQueue<>(1200);
+            sendingQueue[i] = new LockFreeRingBuffer<>(1200);
             ackKeeperList[i] = new AckKeeper();
         }
 
@@ -81,9 +81,10 @@ public class PerfectLinks {
     public static void perfectSend(List<Byte> data, int deliveryHost) throws InterruptedException {   
         Packet p = new Packet(data, parser.myId(), deliveryHost);
 
-        BlockingQueue<Packet> q = sendingQueue[deliveryHost - 1];
-
-        q.put(p);
+        while (!sendingQueue[deliveryHost - 1].offer(p)) {
+            // Buffer is full, wait and retry
+            Thread.yield();
+        }
     }
 
     private static void sendingThread() {
@@ -91,10 +92,8 @@ public class PerfectLinks {
             while(Main.running) {
                 Boolean allEmpty = true;
                 for(int hostId = 1; hostId <= nHosts; hostId++) {
-                    Queue<Packet> currentSendingQueue = sendingQueue[hostId - 1];
-
                     if(windowSize[hostId - 1].get() <= WINDOW_MAX_SIZE) {
-                        Packet p = currentSendingQueue.poll();
+                        Packet p = sendingQueue[hostId - 1].poll();
                         if(p == null)
                             continue;
 
