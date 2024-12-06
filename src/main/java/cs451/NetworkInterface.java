@@ -14,6 +14,8 @@ public class NetworkInterface {
 
     private static DatagramSocket socketReceive, socketSend;
 
+    private static InetSocketAddress[] targetAddress;
+
     public static void begin(Parser p) throws SocketException {
         parser = p;
 
@@ -23,6 +25,11 @@ public class NetworkInterface {
         socketReceive = new DatagramSocket(port);
         // System.out.println("Listening socket created on port " + port);
         socketSend = new DatagramSocket();
+
+        targetAddress = new InetSocketAddress[parser.hosts().size()];
+        for(Host host : parser.hosts()) {
+            targetAddress[host.getId() - 1] = new InetSocketAddress(host.getIp(), host.getPort());
+        }
 
         new Thread(NetworkInterface::receivePackets).start();
     }
@@ -34,14 +41,13 @@ public class NetworkInterface {
                 socketReceive.receive(datagramPacket);
                 //System.out.println("Received packet.\n. Data: " + new String(datagramPacket.getData()) + " - Length: " + datagramPacket.getLength());
                 Packet p = Packet.deserialize(datagramPacket.getData(), datagramPacket.getLength());
-                if (p != null) {
-                    if(p.isAckPacket()) {
-                        PerfectLinks.ackReceived(p);
-                    }
-                    else {
-                        PerfectLinks.receivedPacket(p);
-                    }
-                } else System.err.println("Invalid packet received!");
+
+                if(p.isAckPacket()) {
+                    PerfectLinks.ackReceived(p);
+                }
+                else {
+                    PerfectLinks.receivedPacket(p);
+                }
             }   
         } catch (Exception e) {
             e.printStackTrace();
@@ -51,11 +57,8 @@ public class NetworkInterface {
     } 
 
     public static void sendPacket(Packet packet) throws IOException {
-        Host targetHost = parser.hosts().get(packet.getTargetID() - 1);
-        InetSocketAddress targetAddress = new InetSocketAddress(targetHost.getIp(), targetHost.getPort());
-  
         byte[] data = packet.serialize();
-        socketSend.send(new DatagramPacket(data, data.length, targetAddress));
+        socketSend.send(new DatagramPacket(data, data.length, targetAddress[packet.getTargetID() - 1]));
     }
 
     public static final List<Byte> intToBytes(int number) {
