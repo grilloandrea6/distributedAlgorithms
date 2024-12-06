@@ -33,38 +33,21 @@ public class FIFOUrbPacket {
     }
 
     public static FIFOUrbPacket deserialize(List<Byte> data, int sender)  {
-        // System.out.println("deserialize packet: size " + data.size());
+        FIFOUrbPacket packet = new FIFOUrbPacket();
 
-        // try{
-            // if(data.size() < 5) {
-            //     throw new Exception("Invalid packet size");
-            // }
+        packet.origSender = NetworkInterface.bytesToInt(data.subList(0, 4));
+        packet.seq = NetworkInterface.bytesToInt(data.subList(4, 8));
+        packet.data = data.subList(8, data.size());
 
-            FIFOUrbPacket packet = new FIFOUrbPacket();
-
-            //data.remove(0); //length of the message
-
-            packet.origSender = NetworkInterface.bytesToInt(data.subList(0, 4));
-            packet.seq = NetworkInterface.bytesToInt(data.subList(4, 8));
-            packet.data = data.subList(8, data.size());
-
-            packet.sender = sender;
-            // System.out.println("Deserialized packet: " + packet.origSender + " " + packet.seq + " " + packet.data);
-
-            
-            return packet;
-        // } catch (Exception e) {
-        //     System.out.println("Failed to deserialize packet.");
-        //     e.printStackTrace();
-        //     return null;
-        // }
-        
+        packet.sender = sender;
+        return packet;        
     }
 
     @Override
     public int hashCode() {
         return origSender ^ seq;
     }
+    
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {

@@ -24,13 +24,6 @@ public class PerfectLinks {
     private static int nHosts;
 
     private static PriorityBlockingQueue<Packet> waitingForAck;
-    //private static ConcurrentHashMap<Packet, Integer> acked = new ConcurrentHashMap<>();
-    //private static Set<Packet> acked = ConcurrentHashMap.newKeySet(8000);
-
-    // static long estimatedRTT = 100; // Initial RTT estimate in ms
-    // private static final double ALPHA = 0.00125; // Smoothing factor for EMA
-
-    // static int nRetrasmissions = 0;
 
     static void begin(Parser p) {
         parser = p;
@@ -59,24 +52,16 @@ public class PerfectLinks {
         new Thread(PerfectLinks::retransmitThread).start();
 
         new Thread(PerfectLinks::sendingThread).start();
-
-        //new Thread(PerfectLinks::ackSenderThread).start();
     }
 
     private static void retransmitThread() {
-        // System.out.println("PerfectLinksSender retransmitThread started");
         try {
             while (Main.running) {
                 Packet packet = waitingForAck.take();
                 
-                // if(acked.remove(packet)) {
-                //     continue;
-                // }
-                
                 Long actualTime = System.currentTimeMillis();
                 if (packet.getTimeout() <= actualTime) {
                     // System.out.println("retransmit Thread - Retransmitting packet with id: " + packet.getId() + "to target " + packet.getTargetID());
-                    //nRetrasmissions++;
 
                     NetworkInterface.sendPacket(packet);  
                     packet.backoff();
@@ -91,11 +76,7 @@ public class PerfectLinks {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
-        // System.out.println("Exiting retransmit thread");
     }
-
-    // static int maxQueueSize = 0;
 
     public static void perfectSend(List<Byte> data, int deliveryHost) throws InterruptedException {   
         Packet p = new Packet(data, parser.myId(), deliveryHost);
@@ -103,10 +84,6 @@ public class PerfectLinks {
         BlockingQueue<Packet> q = sendingQueue[deliveryHost - 1];
 
         q.put(p);
-        
-        // if(q.size() > maxQueueSize) {
-        //     maxQueueSize = q.size();
-        // }
     }
 
     private static void sendingThread() {
@@ -136,11 +113,7 @@ public class PerfectLinks {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
-        // System.out.println("Exiting sending thread");
     }
-
-    // static int maxNacked = 0;
 
     public static void ackReceived(Packet packet) {
         int senderId = packet.getSenderID();
@@ -149,17 +122,11 @@ public class PerfectLinks {
         packet.id = packet.getAckedIds();
 
         waitingForAck.remove(packet);
-        //acked.add(packet);
-
-        // if(maxNacked < acked.size()) {
-        //     maxNacked = acked.size();
-        // }
 
         windowSize[senderId - 1].decrementAndGet();
     }
 
     public static void receivedPacket(Packet packet) throws InterruptedException, IOException {
-        // System.out.println("PerfectLinks receivedPacket called");
         int senderId = packet.getSenderID();
 
         Packet ackPacket = Packet.createAckPacket(packet);

@@ -13,22 +13,6 @@ public class Main {
     private static void handleSignal() {
         //immediately stop network packet processing
         running = false;
-        // System.out.println("Immediately stopping network packet processing.");
-
-
-        
-        // System.err.printf("| %2d  | %5d maxSendingQueueSize | %5d nRetr | %5d maxNAcked | %5d ackKeeper maxAcksSize |\n", 
-        //     parser.myId(),
-        //     PerfectLinks.maxQueueSize,
-        //     PerfectLinks.nRetrasmissions,
-        //     //PerfectLinks.estimatedRTT,
-        //     PerfectLinks.maxNacked,
-        //     AckKeeper.maxAcksSize);
-
-        
-
-        //write/flush output file if necessary
-        // System.out.println("Writing output.");
         try {
             OutputLogger.end();
         } catch (IOException e) {
@@ -103,7 +87,7 @@ public class Main {
 
         FIFOUniformReliableBroadcast.begin(parser);
         
-        // Thread.sleep(20); //ToDo remove
+        // Thread.sleep(20);
 
         try {
             for(int i = 1; i <= nMessages; i++) {

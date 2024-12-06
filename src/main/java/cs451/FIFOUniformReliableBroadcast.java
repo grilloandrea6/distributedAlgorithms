@@ -17,7 +17,6 @@ public class FIFOUniformReliableBroadcast {
 
     static FIFOKeeper[] delivered;
 
-    // pending
     static ConcurrentHashMap<FIFOUrbPacket, FIFOUrbPacket> pending = new ConcurrentHashMap<>();
 
 
@@ -33,13 +32,9 @@ public class FIFOUniformReliableBroadcast {
     }
 
     static void broadcast(List<Byte> data) throws Exception {
-        // System.out.println("FIFOUniformReliableBroadcast - Broadcasting message");
-
         OutputLogger.logBroadcast(data);
 
-        int seq = seqNumber++;
-
-        FIFOUrbPacket packet = new FIFOUrbPacket(myId, seq, data);
+        FIFOUrbPacket packet = new FIFOUrbPacket(myId, seqNumber++, data);
 
         synchronized(FIFOUniformReliableBroadcast.class) {
             while(windowSize >= MAX_WINDOW_SIZE) {
@@ -49,12 +44,8 @@ public class FIFOUniformReliableBroadcast {
             windowSize++;
         }
 
-        // aggiungo ad pending
         pending.put(packet, packet);
-
-        // mando a tutti
-        internalBroadcast(packet);
-        
+        internalBroadcast(packet);        
     }
 
     static void internalBroadcast(FIFOUrbPacket packet) throws InterruptedException {
@@ -68,7 +59,6 @@ public class FIFOUniformReliableBroadcast {
             PerfectLinks.perfectSend(serialized, deliveryHost);
         }
     }
-
 
     static void receivePacket(int senderId, List<Byte> data) throws InterruptedException, IOException {        
         FIFOUrbPacket packet = FIFOUrbPacket.deserialize(data, senderId);
