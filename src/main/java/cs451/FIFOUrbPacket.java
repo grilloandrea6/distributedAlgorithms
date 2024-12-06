@@ -45,7 +45,7 @@ public class FIFOUrbPacket {
 
     @Override
     public int hashCode() {
-        return origSender ^ seq;
+        return seq * 961 + origSender;
     }
     
     @Override

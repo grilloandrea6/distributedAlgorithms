@@ -147,9 +147,7 @@ public class Packet {
 
     @Override
     public int hashCode() {
-        int result = id;
-        result = 31 * result + targetID;
-        return result;
+        return id * 961 + targetID;
     }
 
     @Override
