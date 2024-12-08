@@ -3,6 +3,7 @@ package cs451;
 import java.io.IOException;
 import java.net.SocketException;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -11,6 +12,7 @@ public class PerfectLinks {
 
     private static AtomicInteger[] windowSize;
     private static LockFreeRingBuffer<Packet>[] sendingQueue;
+    private static ConcurrentLinkedQueue<Packet>[] sendingOverflow;
     private static AckKeeper[] ackKeeperList;
 
     public final static int WINDOW_MAX_SIZE = 5; // ToDo mmmmm
@@ -28,11 +30,13 @@ public class PerfectLinks {
 
         windowSize = new AtomicInteger[nHosts];
         sendingQueue = new LockFreeRingBuffer[nHosts];
+        sendingOverflow = new ConcurrentLinkedQueue[nHosts];
         ackKeeperList = new AckKeeper[nHosts];
 
         for(int i = 0; i < nHosts; i++) {
             windowSize[i] = new AtomicInteger(0);
             sendingQueue[i] = new LockFreeRingBuffer<>(1200);
+            sendingOverflow[i] = new ConcurrentLinkedQueue<>();
             ackKeeperList[i] = new AckKeeper();
         }
 
@@ -75,9 +79,8 @@ public class PerfectLinks {
     public static void perfectSend(List<Byte> data, int deliveryHost) throws InterruptedException {   
         Packet p = new Packet(data, parser.myId(), deliveryHost);
 
-        while (!sendingQueue[deliveryHost - 1].offer(p)) {
-            // Buffer is full, wait and retry
-            Thread.yield();
+        if (!sendingQueue[deliveryHost - 1].offer(p)) {
+            sendingOverflow[deliveryHost - 1].add(p);
         }
     }
 
@@ -88,6 +91,8 @@ public class PerfectLinks {
                 for(int hostId = 1; hostId <= nHosts; hostId++) {
                     if(windowSize[hostId - 1].get() <= WINDOW_MAX_SIZE) {
                         Packet p = sendingQueue[hostId - 1].poll();
+                        if(p == null)
+                            p = sendingOverflow[hostId - 1].poll();
                         if(p == null)
                             continue;
 
