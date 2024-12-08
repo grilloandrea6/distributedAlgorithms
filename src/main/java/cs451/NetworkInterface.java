@@ -6,7 +6,6 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
@@ -14,23 +13,23 @@ public class NetworkInterface {
     public static Parser parser;
 
     private static DatagramSocket socketReceive, socketSend;
-    static double timeForAckReceived = 0.;
-    static double timeForProcessPacket = 0.;
-    static double maximumTimeForAckReceived = 0.;
-    static double maximumTimeForProcessPacket = 0.;
-    static int timesOverMillisecondAckReceived = 0;
-    static int timesOverMillisecondProcessPacket = 0;
-    public static double ALPHA = 0.001;
+
+    private static InetSocketAddress[] targetAddress;
 
     public static void begin(Parser p) throws SocketException {
         parser = p;
 
         int port = parser.hosts().get(parser.myId() - 1).getPort();
 
-        System.out.println("My ID: " + parser.myId() + " - Port:" + port);
+        // System.out.println("My ID: " + parser.myId() + " - Port:" + port);
         socketReceive = new DatagramSocket(port);
-        System.out.println("Listening socket created on port " + port);
+        // System.out.println("Listening socket created on port " + port);
         socketSend = new DatagramSocket();
+
+        targetAddress = new InetSocketAddress[parser.hosts().size()];
+        for(Host host : parser.hosts()) {
+            targetAddress[host.getId() - 1] = new InetSocketAddress(host.getIp(), host.getPort());
+        }
 
         new Thread(NetworkInterface::receivePackets).start();
     }
@@ -42,46 +41,24 @@ public class NetworkInterface {
                 socketReceive.receive(datagramPacket);
                 //System.out.println("Received packet.\n. Data: " + new String(datagramPacket.getData()) + " - Length: " + datagramPacket.getLength());
                 Packet p = Packet.deserialize(datagramPacket.getData(), datagramPacket.getLength());
-                if (p != null) {
-                    if(p.isAckPacket()) {
-                        long time = System.nanoTime();
-                        PerfectLinks.ackReceived(p);
-                        time = System.nanoTime() - time;
-                        timeForAckReceived = ALPHA * time + (1 - ALPHA) * timeForAckReceived;
-                        if(time > maximumTimeForAckReceived) {
-                            maximumTimeForAckReceived = time;
-                        }
-                        if(time > 1000000) {
-                            timesOverMillisecondAckReceived++;
-                        }
-                    }
-                    else {
-                        long time = System.nanoTime();
-                        PerfectLinks.receivedPacket(p);
-                        time = System.nanoTime() - time;
-                        timeForProcessPacket = ALPHA * time + (1 - ALPHA) * timeForProcessPacket;
-                        if(time > maximumTimeForProcessPacket) {
-                            maximumTimeForProcessPacket = time;
-                        }
-                        if(time > 1000000) {
-                            timesOverMillisecondProcessPacket++;
-                        }
-                    }
-                } else System.err.println("Invalid packet received!");
+
+                if(p.isAckPacket()) {
+                    PerfectLinks.ackReceived(p);
+                }
+                else {
+                    PerfectLinks.receivedPacket(p);
+                }
             }   
         } catch (Exception e) {
             e.printStackTrace();
         }
     
-        System.out.println("NetworkInterface - Exiting receivePackets thread");
+        // System.out.println("NetworkInterface - Exiting receivePackets thread");
     } 
 
     public static void sendPacket(Packet packet) throws IOException {
-        Host targetHost = parser.hosts().get(packet.getTargetID() - 1);
-        InetSocketAddress targetAddress = new InetSocketAddress(targetHost.getIp(), targetHost.getPort());
-  
         byte[] data = packet.serialize();
-        socketSend.send(new DatagramPacket(Arrays.copyOf(data, data.length), data.length, targetAddress)); //ToDo do i really need the copy?
+        socketSend.send(new DatagramPacket(data, data.length, targetAddress[packet.getTargetID() - 1]));
     }
 
     public static final List<Byte> intToBytes(int number) {

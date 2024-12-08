@@ -1,58 +1,41 @@
 package cs451;
 
-import java.util.Set;
-import java.util.HashSet;
+import java.util.TreeSet;
 
 public class AckKeeper {
-    private static final int MAXIMUM_ACK_SIZE = 20; // ToDo tune value
+    private int maximumInOrderAck = -1;
+    private TreeSet<Integer> acks = new TreeSet<>();
 
-    private int maximumInOrderAck;
-    private Set<Integer> acks;
-    private Set<Integer> nacks;
+    // static int maxAcksSize = 0;
 
-    public AckKeeper() {
-        this.maximumInOrderAck = -1;
-        this.acks = new HashSet<>();
-        this.nacks = new HashSet<>();
-    }
-
+    public AckKeeper() {}
+    
     public boolean addAck(int ack) {
-        if (isAcked(ack))
+        if (isAcked(ack)) {
             return false;
-
-        if(nacks.contains(ack)) {
-            nacks.remove(ack);
-        } else if (ack == this.maximumInOrderAck + 1) {
-            this.maximumInOrderAck++;
-            removeAcks();
-        } else if(acks.size() >= MAXIMUM_ACK_SIZE) {
-            this.nacks.add(++this.maximumInOrderAck);
-            removeAcks();
-            addAck(ack);
-        } else {
-            this.acks.add(ack);
         }
+
+        if (ack == this.maximumInOrderAck + 1) {
+            this.maximumInOrderAck++;
+            if(!acks.isEmpty()) removeAcks();
+        } else this.acks.add(ack);
+
+        // maxAcksSize = Math.max(maxAcksSize, this.acks.size());
+        // if(acks.size() > maxAcksSize) {
+        //     maxAcksSize = acks.size();
+        // }
+        
         return true;
     }
 
     private void removeAcks() {
-        for (int ack : acks) {
-            if (ack == this.maximumInOrderAck + 1) {
-                this.maximumInOrderAck++;
-                this.acks.remove(ack);
-                removeAcks();
-                return;
-            }
+        while (!acks.isEmpty() && acks.first() == this.maximumInOrderAck + 1) {
+            this.maximumInOrderAck++;
+            this.acks.pollFirst();
         }
     }
 
     public boolean isAcked(int ack) {
-        if(nacks.contains(ack))
-            return false;
-        
-        if(ack <= this.maximumInOrderAck)
-            return true;
-        
-        return this.acks.contains(ack);
+                return ack <= this.maximumInOrderAck || this.acks.contains(ack);
     }
 }

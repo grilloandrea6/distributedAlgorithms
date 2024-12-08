@@ -20,11 +20,11 @@ public class FIFOUrbPacket {
     }
 
     public List<Byte> serialize() {
-        List<Byte> buffer = new ArrayList<>(5 + ((data != null) ? data.size() : 0));
+        List<Byte> buffer = new ArrayList<>(8 + ((data != null) ? data.size() : 0));
 
         // Serialize fields
-        buffer.add((byte)origSender);                    // 1 byte
-        buffer.addAll(NetworkInterface.intToBytes(seq)); // 4 bytes
+        buffer.addAll(NetworkInterface.intToBytes(origSender));         // 4 bytes
+        buffer.addAll(NetworkInterface.intToBytes(seq));                // 4 bytes
         if(data != null)
             buffer.addAll(data);
         
@@ -33,39 +33,21 @@ public class FIFOUrbPacket {
     }
 
     public static FIFOUrbPacket deserialize(List<Byte> data, int sender)  {
-        // System.out.println("deserialize packet: size " + data.size());
+        FIFOUrbPacket packet = new FIFOUrbPacket();
 
-        // try{
-            // if(data.size() < 5) {
-            //     throw new Exception("Invalid packet size");
-            // }
+        packet.origSender = NetworkInterface.bytesToInt(data.subList(0, 4));
+        packet.seq = NetworkInterface.bytesToInt(data.subList(4, 8));
+        packet.data = data.subList(8, data.size());
 
-            FIFOUrbPacket packet = new FIFOUrbPacket();
-
-            data.remove(0); //length of the message
-
-            packet.origSender = data.get(0);
-            packet.seq = NetworkInterface.bytesToInt(data.subList(1, 5));
-            // packet.data = List.copyOf(data.subList(5, data.size()));
-            packet.data = data.subList(5, data.size());
-
-            packet.sender = sender;
-            // System.out.println("Deserialized packet: " + packet.origSender + " " + packet.seq + " " + packet.data);
-
-            
-            return packet;
-        // } catch (Exception e) {
-        //     System.out.println("Failed to deserialize packet.");
-        //     e.printStackTrace();
-        //     return null;
-        // }
-        
+        packet.sender = sender;
+        return packet;        
     }
 
     @Override
     public int hashCode() {
-        return origSender ^ seq;
+        return seq * 961 + origSender;
     }
+    
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
