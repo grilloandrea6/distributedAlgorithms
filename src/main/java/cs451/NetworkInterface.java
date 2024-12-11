@@ -61,29 +61,29 @@ public class NetworkInterface {
         socketSend.send(new DatagramPacket(data, data.length, targetAddress[packet.getTargetID() - 1]));
     }
 
-    public static final List<Byte> intToBytes(int number) {
-        List<Byte> byteList = new ArrayList<>(4);
+    public static final byte[] intToBytes(int number) {
+        byte[] byteList = new byte[4];
 
         // Extract bytes from int
-        byteList.add((byte) ((number >> 24) & 0xFF)); // Most significant byte
-        byteList.add((byte) ((number >> 16) & 0xFF));
-        byteList.add((byte) ((number >> 8) & 0xFF));
-        byteList.add((byte) (number & 0xFF));          // Least significant byte
+        byteList[0] = (byte) ((number >> 24) & 0xFF); // Most significant byte
+        byteList[1] = (byte) ((number >> 16) & 0xFF);
+        byteList[2] = (byte) ((number >> 8) & 0xFF);
+        byteList[3] = (byte) (number & 0xFF);          // Least significant byte
 
         return byteList;    
     }
 
-    public static final int bytesToInt(List<Byte> byteList) {
-        if (byteList == null || byteList.size() < 4) {
+    public static final int bytesToInt(byte[] byteList) {
+        if (byteList == null || byteList.length < 4) {
             throw new IllegalArgumentException("The list must contain at least 4 bytes.");
         }
 
         // Combine the bytes back into an int
         int result = 0;
-        result |= (byteList.get(0) & 0xFF) << 24; // Most significant byte
-        result |= (byteList.get(1) & 0xFF) << 16;
-        result |= (byteList.get(2) & 0xFF) << 8;
-        result |= (byteList.get(3) & 0xFF);       // Least significant byte
+        result |= (byteList[0] & 0xFF) << 24; // Most significant byte
+        result |= (byteList[1] & 0xFF) << 16;
+        result |= (byteList[2] & 0xFF) << 8;
+        result |= (byteList[3] & 0xFF);       // Least significant byte
 
         return result;
     }

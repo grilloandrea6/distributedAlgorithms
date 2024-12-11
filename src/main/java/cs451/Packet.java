@@ -12,11 +12,9 @@ public class Packet {
     
     int targetID;
     
-    private List<Byte> data;
+    private byte[] data;
 
     static private int idCounter = 0;
-
-    private int numberOfMessages = 0;
 
     private boolean isAckPacket;
 
@@ -33,11 +31,8 @@ public class Packet {
         creationTime = System.currentTimeMillis();
     }
 
-    Packet(List<Byte> data, int senderID, int targetID) {
-        this.data = new ArrayList<>(MAX_PACKET_SIZE);
-
-        this.data.addAll(data);
-        this.numberOfMessages = 1;
+    Packet(byte[] data, int senderID, int targetID) {
+        this.data = data;
         this.senderID = senderID;
         this.targetID = targetID;
         this.id = idCounter++;
@@ -69,10 +64,10 @@ public class Packet {
     }
 
     public int getAckedIds() {
-        // Make sure the byteList size is a multiple of 4
-        if (data.size() % 4 != 0) {
-            throw new IllegalArgumentException("Byte list size must be a multiple of 4");
-        }
+        // // Make sure the byteList size is a multiple of 4
+        // if (data.size() % 4 != 0) {
+        //     throw new IllegalArgumentException("Byte list size must be a multiple of 4");
+        // }
 
         return NetworkInterface.bytesToInt(data);
     }
@@ -86,14 +81,17 @@ public class Packet {
     }
 
     public byte[] serialize() {
-        ByteBuffer buffer = ByteBuffer.allocate(9 + ((data != null) ? data.size() : 0));
+        ByteBuffer buffer = ByteBuffer.allocate(9 + ((data != null) ? data.length : 0));
 
         // Serialize fields
         buffer.putInt(id);                            // 4 bytes
         buffer.putInt(senderID);                      // 4 bytes
         buffer.put((byte) (isAckPacket ? 1 : 0));     // 1 byte for boolean
+        
         if(data != null) {
-            data.forEach(buffer::put);
+            for (byte b : data) {
+                buffer.put(b);
+            }
         }
         
         return buffer.array();
@@ -103,7 +101,7 @@ public class Packet {
         ByteBuffer buffer = ByteBuffer.wrap(byteArray);
 
         Packet packet = new Packet();
-        packet.data = new ArrayList<>(byteArray.length - 9);
+        packet.data = new byte[byteArray.length - 9];
         
         // Deserialize fields
         packet.id = buffer.getInt();                         // 4 bytes
@@ -111,8 +109,8 @@ public class Packet {
         packet.isAckPacket = buffer.get() == 1;              // 1 byte for boolean
         packet.targetID = NetworkInterface.parser.myId();
         
-        for(length -= 9; length > 0; length--) {
-            packet.data.add(buffer.get());
+        for(int i = 0; i < length - 9; i++) {
+            packet.data[i] = buffer.get();
         }
         
         return packet;
@@ -127,22 +125,12 @@ public class Packet {
         return packet;
     }
 
-    public List<Byte> getData() {
+    public byte[] getData() {
         return data;
     }
 
     public int getSenderID() {
         return senderID;
-    }
-
-    public boolean spaceAvailable(int length) {
-        return (data.size() + length + 9) < MAX_PACKET_SIZE && numberOfMessages < 1;
-    }
-
-    public void addData(List<Byte> data2) {
-        data.add((byte)data2.size());
-        data.addAll(data2);
-        numberOfMessages++;
     }
 
     @Override

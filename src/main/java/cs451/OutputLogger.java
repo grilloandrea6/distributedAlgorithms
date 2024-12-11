@@ -3,7 +3,7 @@ package cs451;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 
 public class OutputLogger {
     private static BufferedWriter writer;
@@ -12,19 +12,14 @@ public class OutputLogger {
         writer = new BufferedWriter(new FileWriter(p.output()), 32768);
     }
 
-    public static void logDeliver(int senderId, List<Byte> data) throws IOException {
+    public static void logDecide(Set<Integer> data) throws IOException {
         synchronized (writer) {
             if(Main.running) {
-                writer.write("d " + senderId + " " + NetworkInterface.bytesToInt(data));
-                writer.newLine();
-            }
-        }
-    }
-
-    public static void logBroadcast(List<Byte> data) throws IOException {
-        synchronized (writer) {
-            if(Main.running) {
-                writer.write("b " + NetworkInterface.bytesToInt(data));
+                for(int i : data) {
+                    writer.write(i); // todo check if faster concat or double write
+                    writer.write(" ");
+                }
+                
                 writer.newLine();
             }
         }

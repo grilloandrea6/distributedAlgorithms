@@ -4,6 +4,10 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -35,33 +39,33 @@ public class Main {
 
         initSignalHandlers();
 
-        // example
-        // long pid = ProcessHandle.current().pid();
-        // System.out.println("My PID: " + pid + "\n");
-        // System.out.println("From a new terminal type `kill -SIGINT " + pid + "` or `kill -SIGTERM " + pid + "` to stop processing packets\n");
+        long pid = ProcessHandle.current().pid();
+        System.out.println("My PID: " + pid + "\n");
+        System.out.println("From a new terminal type `kill -SIGINT " + pid + "` or `kill -SIGTERM " + pid + "` to stop processing packets\n");
 
-        // System.out.println("My ID: " + parser.myId() + "\n");
-        // System.out.println("List of resolved hosts is:");
-        // System.out.println("==========================");
-        // for (Host host: parser.hosts()) {
-        //     System.out.println(host.getId());
-        //     System.out.println("Human-readable IP: " + host.getIp());
-        //     System.out.println("Human-readable Port: " + host.getPort());
-        //     System.out.println();
-        // }
-        // System.out.println();
+        System.out.println("My ID: " + parser.myId() + "\n");
+        System.out.println("List of resolved hosts is:");
+        System.out.println("==========================");
+        for (Host host: parser.hosts()) {
+            System.out.println(host.getId());
+            System.out.println("Human-readable IP: " + host.getIp());
+            System.out.println("Human-readable Port: " + host.getPort());
+            System.out.println();
+        }
+        System.out.println();
 
-        // System.out.println("Path to output:");
-        // System.out.println("===============");
-        // System.out.println(parser.output() + "\n");
+        System.out.println("Path to output:");
+        System.out.println("===============");
+        System.out.println(parser.output() + "\n");
 
-        // System.out.println("Path to config:");
-        // System.out.println("===============");
-        // System.out.println(parser.config() + "\n");
+        System.out.println("Path to config:");
+        System.out.println("===============");
+        System.out.println(parser.config() + "\n");
 
-        // System.out.println("Doing some initialization\n");
+        System.out.println("Doing some initialization\n");
 
-        int nMessages;
+        int nShots, maximumProposalSize, maximumDifferentElements;
+        Set<Integer>[] proposals;
         try {
             OutputLogger.begin(parser);
         } catch (IOException e) {
@@ -69,31 +73,37 @@ public class Main {
             return;
         }
 
-        // System.out.println("Reading config file...");
-        // System.out.println("I am host " + parser.myId() + ".");
+        System.out.println("Reading config file...");
+        System.out.println("I am host " + parser.myId() + ".");
         try {
             BufferedReader configReader = new BufferedReader(new FileReader(parser.config()));
             String config[] = configReader.readLine().split("\\s");
-            nMessages = Integer.parseInt(config[0]);
-            configReader.close();
-            // System.out.println("I will broadcast " + nMessages + " messages.");
+            nShots = Integer.parseInt(config[0]);
+            maximumProposalSize = Integer.parseInt(config[1]);
+            maximumDifferentElements = Integer.parseInt(config[2]);
+            proposals = new HashSet[nShots];
 
+            for(int i = 0; i < nShots; i++) {
+                String[] line = configReader.readLine().split("\\s");
+                proposals[i] = Arrays.stream(line).map((String s) -> Integer.parseInt(s)).collect(Collectors.toSet());
+            }
+            configReader.close();
         } catch (IOException e) {
             System.err.println("Error reading config file: " + e.getMessage());
             return;
         }
 
-        // System.out.println("\nBroadcasting and delivering messages...\n");
-
-        FIFOUniformReliableBroadcast.begin(parser);
+        System.out.println("Number of shots: " + nShots);
+        System.out.println("Maximum proposal size: " + maximumProposalSize);
+        System.out.println("Maximum different elements: " + maximumDifferentElements);
+        System.out.println("Proposals:");
+        for (int i = 0; i < nShots; i++) {
+            System.out.println("Proposal " + (i + 1) + ": " + proposals[i]);
+        }
         
-        // Thread.sleep(20);
-
         try {
-            for(int i = 1; i <= nMessages; i++) {
-                // System.out.println("Main - Broadcasting message " + i);
-                List<Byte> data = NetworkInterface.intToBytes(i);
-                FIFOUniformReliableBroadcast.broadcast(data);
+            for(int i = 0; i <   nShots; i++) {
+                LatticeAgreement.propose(i, proposals[i]);
             }
         } catch (Exception e) {
             e.printStackTrace();

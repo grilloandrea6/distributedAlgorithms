@@ -76,7 +76,7 @@ public class PerfectLinks {
         }
     }
 
-    public static void perfectSend(List<Byte> data, int deliveryHost) throws InterruptedException {   
+    public static void perfectSend(byte[] data, int deliveryHost) throws InterruptedException {   
         Packet p = new Packet(data, parser.myId(), deliveryHost);
 
         if (!sendingQueue[deliveryHost - 1].offer(p)) {
@@ -131,7 +131,7 @@ public class PerfectLinks {
         NetworkInterface.sendPacket(ackPacket);
 
         if(ackKeeperList[senderId - 1].addAck(packet.getId())) {
-            FIFOUniformReliableBroadcast.receivePacket(packet.getSenderID(), packet.getData());
+            LatticeAgreement.receivePacket(packet.getSenderID(), packet.getData());
         }
     }
 }
