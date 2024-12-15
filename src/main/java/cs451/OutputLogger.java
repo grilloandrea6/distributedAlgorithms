@@ -16,8 +16,7 @@ public class OutputLogger {
         synchronized (writer) {
             if(Main.running) {
                 for(int i : data) {
-                    writer.write(i); // todo check if faster concat or double write
-                    writer.write(" ");
+                    writer.write(i + " ");
                 }
                 
                 writer.newLine();

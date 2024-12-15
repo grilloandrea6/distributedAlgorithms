@@ -5,39 +5,35 @@ import java.util.Map;
 import java.util.Set;
 
 public class LatticeAgreement {
-    static int myId, hostNumber;
+    static int myId, hostNumber, fPlusOne;
 
-    // ToDo forse non serve, tanto saranno per forza in ordine
-    static final FinishedInstancesKeeper finishedInstances = new FinishedInstancesKeeper();
+    static int lastShotNumber = 0;
 
-    static final Map<Integer, LatticeInstance> instances = new HashMap<>();
+    static final Map<Integer, LatticeInstance> instances = new HashMap<>(); 
+    // ToDo capire se è possibile togliere istances, quando sono finite? l'acceptor continua a girare anche dopo il decide...
 
     public static void begin(Parser p) {
-        myId = p.myId();
+        myId = p.myId();        
         hostNumber = p.hosts().size();
+        fPlusOne = (hostNumber - 1) / 2 + 1;
+        System.out.println("f+1: " + fPlusOne);
+
+        PerfectLinks.begin(p);
     }
 
-    public static void propose(int shotNumber, Set<Integer> proposal) throws InterruptedException {
-        System.out.println("Proposal " + shotNumber + " received: " + proposal);
-        LatticePacket packet = new LatticePacket(shotNumber, LatticePacket.Type.PROPOSAL, 0, proposal);
+    public static void propose(Set<Integer> proposal) throws Exception {
+        lastShotNumber++;
+        System.out.println("Proposal " + lastShotNumber + " received: " + proposal);
+        LatticePacket packet = new LatticePacket(lastShotNumber, LatticePacket.Type.PROPOSAL, 1 , proposal);
 
-        // set variables - hypothesys: have a class for each instance of agreement
+        LatticeInstance instance = new LatticeInstance(proposal);
 
-        LatticeInstance instance;
-        if(instances.containsKey(shotNumber)) {
-            instance = instances.get(shotNumber);
-        } else {
-            instance = new LatticeInstance();
-            instances.put(shotNumber, instance);
-        }
-
-        instance.addStartProposal(proposal);
-
+        instances.put(lastShotNumber, instance);
+                
         internalBroadcast(packet);
-        
     }
 
-    static void internalBroadcast(LatticePacket packet) throws InterruptedException {
+    static void internalBroadcast(LatticePacket packet) throws Exception {
         byte[] serialized = packet.serialize();
 
         for(int deliveryHost = 1; deliveryHost <= hostNumber; deliveryHost++) {
@@ -46,32 +42,26 @@ public class LatticeAgreement {
                 internalReceive(myId, packet);
                 continue;
             }
-                
         
             PerfectLinks.perfectSend(serialized, deliveryHost);
         }
     }
 
-    public static void receivePacket(int senderID, byte[] data) throws InterruptedException {
+    public static void receivePacket(int senderID, byte[] data) throws Exception {
         LatticePacket packet = LatticePacket.deserialize(data);
 
         System.out.println("Packet received from " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
 
         internalReceive(senderID, packet);
     }
-    public static void internalReceive(int senderID, LatticePacket packet) throws InterruptedException {
-        if(finishedInstances.contains(packet.shotNumber))
+    public static void internalReceive(int senderID, LatticePacket packet) throws Exception {
+        if(lastShotNumber < packet.shotNumber)
             return;
 
-        LatticeInstance instance;
-        if(instances.containsKey(packet.shotNumber)) {
-            instance = instances.get(packet.shotNumber);
-        } else { // ToDo, tanto non sarà attiva e sarà resettata al propose, quindi posso discard il packet, non creare una nuova istanza
-            instance = new LatticeInstance(); // ToDo anything to initialize?
+        LatticeInstance instance = instances.get(packet.shotNumber);
 
-            instances.put(packet.shotNumber, instance);
-        }
-
+        if(instance == null) // tanto non sarà attiva e sarà resettata al propose, quindi posso discard il packet, non creare una nuova istanza
+            return;
 
         switch (packet.getType()) {
             case PROPOSAL:
@@ -85,9 +75,9 @@ public class LatticeAgreement {
                     packet.type = LatticePacket.Type.ACK;
                     packet.setValues = null;
                 }
+                System.out.println("Sending packet to " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
                 PerfectLinks.perfectSend(packet.serialize(), senderID);
-                
-                break;
+                return;
             case ACK:
                 if(packet.integerValue == instance.activeProposalNumber)
                     instance.ackCount++;
@@ -98,13 +88,32 @@ public class LatticeAgreement {
             case NACK:
                 if(packet.integerValue == instance.activeProposalNumber)
                     instance.nackCount++;
-
-
+                    instance.proposedValue.addAll(packet.setValues);
 
                 break;
             default:
+                System.err.println("Unknown packet type");
                 break;
         }
+
+        
+        if(instance.active && (packet.getType() == LatticePacket.Type.ACK || packet.getType() == LatticePacket.Type.NACK)) {
+            System.out.print("Active and ack/nack received, checking. " + instance.ackCount + " " + instance.nackCount + " " + fPlusOne + " ");
+            if(instance.ackCount > fPlusOne) {
+                System.out.println("Decided on " + instance.proposedValue);
+                OutputLogger.logDecide(instance.proposedValue);
+                instance.active = false;
+            } else if(instance.nackCount > 0 && instance.ackCount + instance.nackCount > fPlusOne) {
+                System.out.println("Incrementing proposal number and sending new proposal");
+                instance.ackCount = 0;
+                instance.nackCount = 0;
+                instance.activeProposalNumber++;
+                packet.type = LatticePacket.Type.PROPOSAL;
+                packet.integerValue = instance.activeProposalNumber;
+                packet.setValues = instance.proposedValue;
+                internalBroadcast(packet);
+            } else System.out.println("");
+        } 
          
 
     }

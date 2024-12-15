@@ -1,8 +1,6 @@
 package cs451;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 public class Packet {
 
@@ -101,7 +99,7 @@ public class Packet {
         ByteBuffer buffer = ByteBuffer.wrap(byteArray);
 
         Packet packet = new Packet();
-        packet.data = new byte[byteArray.length - 9];
+        packet.data = new byte[length - 9];
         
         // Deserialize fields
         packet.id = buffer.getInt();                         // 4 bytes

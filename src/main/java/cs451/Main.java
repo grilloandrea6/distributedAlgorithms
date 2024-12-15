@@ -17,6 +17,7 @@ public class Main {
     private static void handleSignal() {
         //immediately stop network packet processing
         running = false;
+        System.err.println("Stopping packet processing...");
         try {
             OutputLogger.end();
         } catch (IOException e) {
@@ -100,10 +101,13 @@ public class Main {
         for (int i = 0; i < nShots; i++) {
             System.out.println("Proposal " + (i + 1) + ": " + proposals[i]);
         }
-        
+
+        LatticeAgreement.begin(parser);
+
+
         try {
-            for(int i = 0; i <   nShots; i++) {
-                LatticeAgreement.propose(i, proposals[i]);
+            for(int i = 0; i < nShots; i++) {
+                LatticeAgreement.propose(proposals[i]);
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -28,25 +28,6 @@ public class LatticePacket {
         return type;
     }
 
-
-    // public List<Byte> serialize() throws IOException {
-    //     // List<Byte> buffer = new ArrayList<>(9 + ((setValues != null) ? (4 * setValues.size()) : 0)); // 2 ints + 1 byte for type + 4*size of set
-
-    //     // buffer.addAll(NetworkInterface.intToBytes(shotNumber));          // 4 bytes
-    //     // buffer.add((byte) type.ordinal());                               // 1 byte
-    //     // buffer.addAll(NetworkInterface.intToBytes(integerValue));                 // 4 bytes
-    //     // if(setValues != null)
-    //     //     buffer.addAll(
-    //     //         setValues.stream()
-    //     //                 .map(NetworkInterface::intToBytes) // Produces Stream<List<Byte>>
-    //     //                 .flatMap(List::stream)             // Flattens to Stream<Byte>
-    //     //                 .collect(Collectors.toList())      // Collects to a single List<Byte>
-    //     //     );
-
-    //     // return buffer;
-    // }
-
-
     public byte[] serialize() {
         // Precompute the size of the buffer
         int size = 9 + ((setValues != null) ? (4 * setValues.size()) : 0); // 2 ints + 1 byte + 4 * set size

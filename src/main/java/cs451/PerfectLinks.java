@@ -1,8 +1,6 @@
 package cs451;
 
-import java.io.IOException;
 import java.net.SocketException;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -123,7 +121,7 @@ public class PerfectLinks {
             windowSize[senderId - 1].decrementAndGet();
     }
 
-    public static void receivedPacket(Packet packet) throws InterruptedException, IOException {
+    public static void receivedPacket(Packet packet) throws Exception {
         int senderId = packet.getSenderID();
 
         Packet ackPacket = Packet.createAckPacket(packet);
