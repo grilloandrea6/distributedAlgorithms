@@ -4,12 +4,17 @@ import random
 import time
 import signal
 
+
 # Generate configuration files for each process
-def generate_config_files(num_processes, num_proposals, max_values, distinct_values, output_dir):
+def generate_config_files(num_processes, num_proposals, max_values, distinct_values, output_dir, hosts_file):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     all_values = list(range(1, distinct_values + 1))
+
+    with open(hosts_file, "w") as file:
+        for i in range(1, num_processes + 1):
+            file.write(f"{i} localhost {11000 + i}\n")
 
     for process_id in range(1, num_processes + 1):
         config_path = os.path.join(output_dir, f"lattice-agreement-{process_id}.config")
@@ -121,18 +126,18 @@ def validate_outputs(num_processes, output_dir, config_dir):
 
 if __name__ == "__main__":
     # Parameters (adjust as needed)
-    NUM_PROCESSES = 3
-    NUM_PROPOSALS = 1
-    MAX_VALUES = 30
-    DISTINCT_VALUES = 100000
+    NUM_PROCESSES = 50
+    NUM_PROPOSALS = 400
+    MAX_VALUES = 100
+    DISTINCT_VALUES = 1000
 
     HOSTS_FILE = "example/hosts"  # Path to the hosts file
     OUTPUT_DIR = "example/output"
     CONFIG_DIR = "example/auto-config"
 
-    TIMEOUT = 1  # Number of seconds to run each process
+    TIMEOUT = 15  # Number of seconds to run each process
 
     # Steps
-    generate_config_files(NUM_PROCESSES, NUM_PROPOSALS, MAX_VALUES, DISTINCT_VALUES, CONFIG_DIR)
+    generate_config_files(NUM_PROCESSES, NUM_PROPOSALS, MAX_VALUES, DISTINCT_VALUES, CONFIG_DIR, HOSTS_FILE)
     run_processes(NUM_PROCESSES, HOSTS_FILE, OUTPUT_DIR, CONFIG_DIR, TIMEOUT)
     validate_outputs(NUM_PROCESSES, OUTPUT_DIR, CONFIG_DIR)
