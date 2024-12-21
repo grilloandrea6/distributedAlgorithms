@@ -12,6 +12,7 @@ public class Main {
 
     public static boolean running = true;
     static Parser parser;
+    static int maximumDifferentElements;
 
     private static void handleSignal() {
         //immediately stop network packet processing
@@ -64,7 +65,7 @@ public class Main {
 
         System.out.println("Doing some initialization\n");
 
-        int nShots, maximumProposalSize, maximumDifferentElements;
+        int nShots, maximumProposalSize;
         Set<Integer>[] proposals;
         try {
             OutputLogger.begin(parser);

@@ -14,14 +14,16 @@ public class NetworkInterface {
 
     private static InetSocketAddress[] targetAddress;
 
+    private static int size;
+
     public static void begin(Parser p) throws SocketException {
         parser = p;
 
         int port = parser.hosts().get(parser.myId() - 1).getPort();
 
-        // System.out.println("My ID: " + parser.myId() + " - Port:" + port);
+        size = 18 + 4 * Main.maximumDifferentElements; //ToDo if i change packet format
+
         socketReceive = new DatagramSocket(port);
-        // System.out.println("Listening socket created on port " + port);
         socketSend = new DatagramSocket();
 
         targetAddress = new InetSocketAddress[parser.hosts().size()];
@@ -33,19 +35,12 @@ public class NetworkInterface {
     }
 
     public static void receivePackets() {
-        DatagramPacket datagramPacket  = new DatagramPacket(new byte[Packet.MAX_PACKET_SIZE], Packet.MAX_PACKET_SIZE);
+        DatagramPacket datagramPacket  = new DatagramPacket(new byte[size], size);
         try {
             while (Main.running) {
                 socketReceive.receive(datagramPacket);
                 //System.out.println("Received packet.\n. Data: " + new String(datagramPacket.getData()) + " - Length: " + datagramPacket.getLength());
-                Packet p = Packet.deserialize(datagramPacket.getData(), datagramPacket.getLength());
-
-                if(p.isAckPacket()) {
-                    PerfectLinks.ackReceived(p);
-                }
-                else {
-                    PerfectLinks.receivedPacket(p);
-                }
+                PerfectLinks.receive(Packet.deserialize(datagramPacket.getData(), datagramPacket.getLength()));
             }   
         } catch (Exception e) {
             e.printStackTrace();
@@ -56,7 +51,7 @@ public class NetworkInterface {
 
     public static void sendPacket(Packet packet) throws IOException {
         byte[] data = packet.serialize();
-        socketSend.send(new DatagramPacket(data, data.length, targetAddress[packet.getTargetID() - 1]));
+        socketSend.send(new DatagramPacket(data, data.length, targetAddress[packet.targetID - 1]));
     }
 
     public static final byte[] intToBytes(int number) {

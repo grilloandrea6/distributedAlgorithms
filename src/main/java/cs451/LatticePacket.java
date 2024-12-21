@@ -71,7 +71,7 @@ public class LatticePacket {
 
         // Read setValues
         packet.setValues = new HashSet<>();
-        while (offset < buffer.length) {
+        while (offset <= buffer.length - 4) {
             packet.setValues.add(readIntFromBuffer(buffer, offset));
             offset += 4;
         }
@@ -95,10 +95,4 @@ public class LatticePacket {
         buffer[offset++] = (byte) value;
         return offset;
     }
-
-  
-
-    
-
-
 }

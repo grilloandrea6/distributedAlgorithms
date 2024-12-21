@@ -24,7 +24,7 @@ public class PerfectLinks {
 
         nHosts = parser.hosts().size();
 
-        waitingForAck = new PriorityBlockingQueue<Packet>(nHosts * WINDOW_MAX_SIZE, (p1, p2) -> p1.getTimeout().compareTo(p2.getTimeout()));
+        waitingForAck = new PriorityBlockingQueue<Packet>(nHosts * WINDOW_MAX_SIZE, (p1, p2) -> p1.timeout.compareTo(p2.timeout));
 
         windowSize = new AtomicInteger[nHosts];
         sendingQueue = new LockFreeRingBuffer[nHosts];
@@ -33,7 +33,7 @@ public class PerfectLinks {
 
         for(int i = 0; i < nHosts; i++) {
             windowSize[i] = new AtomicInteger(0);
-            sendingQueue[i] = new LockFreeRingBuffer<>(1200);
+            sendingQueue[i] = new LockFreeRingBuffer<>(1200); // ToDo better size?
             sendingOverflow[i] = new ConcurrentLinkedQueue<>();
             ackKeeperList[i] = new AckKeeper();
         }
@@ -43,7 +43,6 @@ public class PerfectLinks {
         } catch (SocketException e) {
             System.err.println("Error starting NetworkInterface: " + e.getMessage());
         }
-
 
         new Thread(PerfectLinks::retransmitThread).start();
 
@@ -56,17 +55,17 @@ public class PerfectLinks {
                 Long actualTime = System.currentTimeMillis();
                 Packet packet = waitingForAck.take();
 
-                if (packet.getTimeout() <= actualTime) {
-                    // System.out.println("retransmit Thread - Retransmitting packet with id: " + packet.getId() + "to target " + packet.getTargetID());
+                if (packet.timeout <= actualTime) {
+                    // System.out.println("retransmit Thread - Retransmitting packet with id: " + packet.id + "to target " + packet.targetID);
 
-                    packet.backoff();
+                    packet.setTimeout();
                     waitingForAck.put(packet);
                     NetworkInterface.sendPacket(packet);  
                 } else {
-                    // System.out.println("retransmit Thread - Not retransmitting packet with id: " + packet.getId() + "to target " + packet.getTargetID());
+                    // System.out.println("retransmit Thread - Not retransmitting packet with id: " + packet.id + "to target " + packet.targetID);
 
                     waitingForAck.put(packet);
-                    Thread.sleep(packet.getTimeout() - actualTime); 
+                    Thread.sleep(packet.timeout - actualTime); 
                 }
             }
         } catch (Exception e) {
@@ -83,9 +82,10 @@ public class PerfectLinks {
     }
 
     private static void sendingThread() {
+        boolean allEmpty;
         try {
             while(Main.running) {
-                Boolean allEmpty = true;
+                allEmpty = true;
                 for(int hostId = 1; hostId <= nHosts; hostId++) {
                     if(windowSize[hostId - 1].get() <= WINDOW_MAX_SIZE) {
                         Packet p = sendingQueue[hostId - 1].poll();
@@ -111,25 +111,22 @@ public class PerfectLinks {
         }
     }
 
-    public static void ackReceived(Packet packet) {
-        int senderId = packet.getSenderID();
+    public static void receive(Packet packet) throws Exception {
+        if(packet.isAckPacket) {
+            packet.targetID = packet.senderID;
+            NetworkInterface.bytesToInt(packet.data);
+            packet.id = NetworkInterface.bytesToInt(packet.data);
+    
+            if(waitingForAck.remove(packet))
+                windowSize[packet.senderID - 1].decrementAndGet();
+        } else {
+            Packet ackPacket = Packet.createAckPacket(packet);
 
-        packet.targetID = packet.getSenderID();
-        packet.id = packet.getAckedIds();
-
-        if(waitingForAck.remove(packet))
-            windowSize[senderId - 1].decrementAndGet();
-    }
-
-    public static void receivedPacket(Packet packet) throws Exception {
-        int senderId = packet.getSenderID();
-
-        Packet ackPacket = Packet.createAckPacket(packet);
-
-        NetworkInterface.sendPacket(ackPacket);
-
-        if(ackKeeperList[senderId - 1].addAck(packet.getId())) {
-            LatticeAgreement.receivePacket(packet.getSenderID(), packet.getData());
+            NetworkInterface.sendPacket(ackPacket);
+    
+            if(ackKeeperList[packet.senderID - 1].addAck(packet.id)) {
+                LatticeAgreement.receivePacket(packet.senderID, packet.data);
+            }
         }
     }
 }

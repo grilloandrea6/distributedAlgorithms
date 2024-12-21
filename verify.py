@@ -122,15 +122,15 @@ def validate_outputs(num_processes, output_dir, config_dir):
 if __name__ == "__main__":
     # Parameters (adjust as needed)
     NUM_PROCESSES = 3
-    NUM_PROPOSALS = 10
-    MAX_VALUES = 10
-    DISTINCT_VALUES = 100
+    NUM_PROPOSALS = 1
+    MAX_VALUES = 30
+    DISTINCT_VALUES = 100000
 
     HOSTS_FILE = "example/hosts"  # Path to the hosts file
     OUTPUT_DIR = "example/output"
     CONFIG_DIR = "example/auto-config"
 
-    TIMEOUT = 10  # Number of seconds to run each process
+    TIMEOUT = 1  # Number of seconds to run each process
 
     # Steps
     generate_config_files(NUM_PROCESSES, NUM_PROPOSALS, MAX_VALUES, DISTINCT_VALUES, CONFIG_DIR)

@@ -1,7 +1,6 @@
 package cs451;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,15 +73,14 @@ public class LatticeAgreement {
         switch (packet.getType()) {
             case PROPOSAL:
                 // if accepted_value ⊆ packet.getSetValue()
-                if(packet.setValues.containsAll(instance.acceptedValue)) {
-                    instance.acceptedValue.addAll(packet.setValues);
+                if(packet.setValues.containsAll(instance.values)) {
+                    instance.values.addAll(packet.setValues);
                     packet.type = LatticePacket.Type.ACK;
-                    packet.setValues = null; // ToDo be careful - can anyone modify this set in the mean time
+                    packet.setValues = null;
                 } else {
-                    // no modification, send ack
-                    instance.acceptedValue.addAll(packet.setValues);
-                    packet.type = LatticePacket.Type.ACK;
-                    packet.setValues = instance.acceptedValue;
+                    instance.values.addAll(packet.setValues);
+                    packet.type = LatticePacket.Type.NACK;
+                    packet.setValues = instance.values;
                 }
                 System.out.println("Sending packet to " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
                 PerfectLinks.perfectSend(packet.serialize(), senderID);
@@ -95,7 +93,7 @@ public class LatticeAgreement {
             case NACK:
                 if(packet.integerValue == instance.activeProposalNumber) {
                     instance.nackCount++;
-                    instance.proposedValue.addAll(packet.setValues);
+                    instance.values.addAll(packet.setValues);
                 }
 
                 break;
@@ -107,8 +105,8 @@ public class LatticeAgreement {
         if(instance.active && (packet.getType() == LatticePacket.Type.ACK || packet.getType() == LatticePacket.Type.NACK)) {
             System.out.print("Active and ack/nack received, checking. " + instance.ackCount + " " + instance.nackCount + " " + fPlusOne + " - ");
             if(instance.ackCount >= fPlusOne) {
-                System.out.println("Decided on " + instance.proposedValue);
-                FIFOKeeper.addDecision(packet.shotNumber,instance.proposedValue);
+                System.out.println("Decided on " + instance.values);
+                FIFOKeeper.addDecision(packet.shotNumber,instance.values);
                 instance.active = false;
             } 
             
@@ -119,7 +117,7 @@ public class LatticeAgreement {
                 instance.activeProposalNumber++;
                 packet.type = LatticePacket.Type.PROPOSAL;
                 packet.integerValue = instance.activeProposalNumber;
-                packet.setValues = instance.proposedValue;
+                packet.setValues = instance.values;
                 internalBroadcast(packet);
             }
         } 

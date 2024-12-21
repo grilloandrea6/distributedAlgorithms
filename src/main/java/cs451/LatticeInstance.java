@@ -7,8 +7,7 @@ public class LatticeInstance {
     boolean active = false;
     int ackCount = 0, nackCount = 0, activeProposalNumber = 0;
 
-    Set<Integer> acceptedValue = new HashSet<>(),
-                 proposedValue; 
+    Set<Integer> values = new HashSet<>(); 
 
     LatticeInstance() {
         ackCount = 0;
@@ -18,7 +17,7 @@ public class LatticeInstance {
 
     void addProposal(Set<Integer> proposedValue) {
         active = true;
-        this.proposedValue = proposedValue;
+        values.addAll(proposedValue);
         activeProposalNumber++;
         ackCount = 0;
         nackCount = 0;

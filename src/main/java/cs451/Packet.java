@@ -3,79 +3,26 @@ package cs451;
 import java.nio.ByteBuffer;
 
 public class Packet {
-
-    static private final Long INITIAL_TIMEOUT = 600L;
-
-    static public final int  MAX_PACKET_SIZE = 50;
-    
-    int targetID;
-    
-    private byte[] data;
-
     static private int idCounter = 0;
 
-    private boolean isAckPacket;
+    static private final Long INITIAL_TIMEOUT = 600L;
+    
+    int id, senderID, targetID;
+    byte[] data;
+    boolean isAckPacket;
+    Long timeout;
 
-    int id;
-    private int senderID;
-
-    private Long interval;
-
-    private Long timeout;
-
-    Long creationTime;
-
-    Packet() {
-        creationTime = System.currentTimeMillis();
-    }
-
+    Packet() {}
+    
     Packet(byte[] data, int senderID, int targetID) {
         this.data = data;
         this.senderID = senderID;
         this.targetID = targetID;
         this.id = idCounter++;
-
-        creationTime = System.currentTimeMillis();
     }
 
     public void setTimeout() {
-        interval = INITIAL_TIMEOUT;
-        timeout = System.currentTimeMillis() + interval;
-    }
-
-    public Long getCreationTime() {
-        return creationTime;
-    }
-
-    public void backoff() {
-        // System.out.println("Backoff called - interval: " + interval);
-        //interval = Math.min(interval * 2, 1000L);
-        timeout = System.currentTimeMillis() + interval;
-    }
-
-    public Long getTimeout() {
-        return timeout;
-    }
-
-    public boolean isAckPacket() {
-        return isAckPacket;
-    }
-
-    public int getAckedIds() {
-        // // Make sure the byteList size is a multiple of 4
-        // if (data.size() % 4 != 0) {
-        //     throw new IllegalArgumentException("Byte list size must be a multiple of 4");
-        // }
-
-        return NetworkInterface.bytesToInt(data);
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public int getTargetID() {
-        return targetID;
+        timeout = System.currentTimeMillis() + INITIAL_TIMEOUT;
     }
 
     public byte[] serialize() {
@@ -121,14 +68,6 @@ public class Packet {
         packet.senderID = NetworkInterface.parser.myId();
         packet.targetID = p.senderID;
         return packet;
-    }
-
-    public byte[] getData() {
-        return data;
-    }
-
-    public int getSenderID() {
-        return senderID;
     }
 
     @Override
