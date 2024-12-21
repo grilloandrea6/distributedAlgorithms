@@ -19,7 +19,7 @@ public class LatticeInstance {
         active = true;
         values.addAll(proposedValue);
         activeProposalNumber++;
-        ackCount = 0;
+        ackCount = 1;
         nackCount = 0;
     }
 

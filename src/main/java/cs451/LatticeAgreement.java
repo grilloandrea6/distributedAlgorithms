@@ -41,11 +41,9 @@ public class LatticeAgreement {
         byte[] serialized = packet.serialize();
 
         for(int deliveryHost = 1; deliveryHost <= hostNumber; deliveryHost++) {
-            // todo do not send to myself
-            // if(deliveryHost == myId) {
-            //     internalReceive(myId, packet);
-            //     continue;
-            // }
+            if(deliveryHost == myId) {
+                continue;
+            }
         
             PerfectLinks.perfectSend(serialized, deliveryHost);
         }
@@ -112,7 +110,7 @@ public class LatticeAgreement {
             
             if(instance.nackCount > 0 && (instance.ackCount + instance.nackCount) >= fPlusOne) {
                 System.out.println("Incrementing proposal number and sending new proposal");
-                instance.ackCount = 0;
+                instance.ackCount = 1;
                 instance.nackCount = 0;
                 instance.activeProposalNumber++;
                 packet.type = LatticePacket.Type.PROPOSAL;
