@@ -21,7 +21,7 @@ def generate_config_files(num_processes, num_proposals, max_values, distinct_val
     print(f"Configuration files written to {output_dir}")
 
 # Run the processes
-def run_processes(num_processes, hosts_file, output_dir, config_dir, run_script, timeout):
+def run_processes(num_processes, hosts_file, output_dir, config_dir, timeout):
     processes = []
     print("Starting processes...")
     for process_id in range(1, num_processes + 1):
@@ -60,14 +60,26 @@ def validate_outputs(num_processes, output_dir, config_dir):
     consistency_passed = True
     termination_passed = True
 
+    # Print stderr files
+    for process_id in range(1, num_processes + 1):
+        stderr_path = os.path.join(output_dir, "proc{:02d}.stderr".format(process_id))
+        with open(stderr_path, "r") as f:
+            stderr_content = f.read()
+            if stderr_content:
+                print(f"Stderr for process {process_id}:")
+                print(stderr_content)
+
     decisions = []
     for process_id in range(1, num_processes + 1):
+        print(f"Validating process {process_id}...")
+
         output_path = os.path.join(output_dir, "proc{:02d}.out".format(process_id))
         config_path = os.path.join(config_dir, f"lattice-agreement-{process_id}.config")
 
         # Load decisions
         with open(output_path, "r") as f:
             process_decisions = [set(map(int, line.split())) for line in f]
+            # print(f"  Decisions: {process_decisions}")
             decisions.append(process_decisions)
 
         # Validate termination
@@ -76,11 +88,15 @@ def validate_outputs(num_processes, output_dir, config_dir):
             if len(process_decisions) != num_proposals:
                 print(f"Process {process_id} failed termination: {len(process_decisions)}/{num_proposals} decisions made.")
                 termination_passed = False
+        if not termination_passed:
+            exit(1)
 
         # Validate validity
         with open(config_path, "r") as f:
             _ = f.readline()  # Skip the first line
             proposals = [set(map(int, line.split())) for line in f]
+
+        # print(f"  Proposals: {proposals}")
 
         for i, decision in enumerate(process_decisions):
             if not proposals[i].issubset(decision):
@@ -91,9 +107,10 @@ def validate_outputs(num_processes, output_dir, config_dir):
     for slot in range(len(decisions[0])):
         slot_decisions = [decisions[pid][slot] for pid in range(num_processes)]
         for i in range(len(slot_decisions)):
+
             for j in range(i + 1, len(slot_decisions)):
                 if not (slot_decisions[i].issubset(slot_decisions[j]) or slot_decisions[j].issubset(slot_decisions[i])):
-                    print(f"Consistency violated between processes for slot {slot + 1}.")
+                    print(f"Consistency violated between processes {i + 1} and {j + 1} for slot {slot + 1}.")
                     consistency_passed = False
 
     # Print summary
@@ -112,11 +129,10 @@ if __name__ == "__main__":
     HOSTS_FILE = "example/hosts"  # Path to the hosts file
     OUTPUT_DIR = "example/output"
     CONFIG_DIR = "example/auto-config"
-    RUN_SCRIPT = "java -jar ./bin/da_proc.jar"  # Path to the run.sh script
 
     TIMEOUT = 10  # Number of seconds to run each process
 
     # Steps
     generate_config_files(NUM_PROCESSES, NUM_PROPOSALS, MAX_VALUES, DISTINCT_VALUES, CONFIG_DIR)
-    run_processes(NUM_PROCESSES, HOSTS_FILE, OUTPUT_DIR, CONFIG_DIR, RUN_SCRIPT, TIMEOUT)
+    run_processes(NUM_PROCESSES, HOSTS_FILE, OUTPUT_DIR, CONFIG_DIR, TIMEOUT)
     validate_outputs(NUM_PROCESSES, OUTPUT_DIR, CONFIG_DIR)
