@@ -40,30 +40,30 @@ public class Main {
 
         initSignalHandlers();
 
-        long pid = ProcessHandle.current().pid();
-        System.out.println("My PID: " + pid + "\n");
-        System.out.println("From a new terminal type `kill -SIGINT " + pid + "` or `kill -SIGTERM " + pid + "` to stop processing packets\n");
+        // long pid = ProcessHandle.current().pid();
+        // System.out.println("My PID: " + pid + "\n");
+        // System.out.println("From a new terminal type `kill -SIGINT " + pid + "` or `kill -SIGTERM " + pid + "` to stop processing packets\n");
 
-        System.out.println("My ID: " + parser.myId() + "\n");
-        System.out.println("List of resolved hosts is:");
-        System.out.println("==========================");
-        for (Host host: parser.hosts()) {
-            System.out.println(host.getId());
-            System.out.println("Human-readable IP: " + host.getIp());
-            System.out.println("Human-readable Port: " + host.getPort());
-            System.out.println();
-        }
-        System.out.println();
+        // System.out.println("My ID: " + parser.myId() + "\n");
+        // System.out.println("List of resolved hosts is:");
+        // System.out.println("==========================");
+        // for (Host host: parser.hosts()) {
+        //     System.out.println(host.getId());
+        //     System.out.println("Human-readable IP: " + host.getIp());
+        //     System.out.println("Human-readable Port: " + host.getPort());
+        //     System.out.println();
+        // }
+        // System.out.println();
 
-        System.out.println("Path to output:");
-        System.out.println("===============");
-        System.out.println(parser.output() + "\n");
+        // System.out.println("Path to output:");
+        // System.out.println("===============");
+        // System.out.println(parser.output() + "\n");
 
-        System.out.println("Path to config:");
-        System.out.println("===============");
-        System.out.println(parser.config() + "\n");
+        // System.out.println("Path to config:");
+        // System.out.println("===============");
+        // System.out.println(parser.config() + "\n");
 
-        System.out.println("Doing some initialization\n");
+        // System.out.println("Doing some initialization\n");
 
         int nShots, maximumProposalSize;
         Set<Integer>[] proposals;
@@ -74,8 +74,8 @@ public class Main {
             return;
         }
 
-        System.out.println("Reading config file...");
-        System.out.println("I am host " + parser.myId() + ".");
+        // System.out.println("Reading config file...");
+        // System.out.println("I am host " + parser.myId() + ".");
         try {
             BufferedReader configReader = new BufferedReader(new FileReader(parser.config()));
             String config[] = configReader.readLine().split("\\s");
@@ -94,13 +94,13 @@ public class Main {
             return;
         }
 
-        System.out.println("Number of shots: " + nShots);
-        System.out.println("Maximum proposal size: " + maximumProposalSize);
-        System.out.println("Maximum different elements: " + maximumDifferentElements);
-        System.out.println("Proposals:");
-        for (int i = 0; i < nShots; i++) {
-            System.out.println("Proposal " + (i + 1) + ": " + proposals[i]);
-        }
+        // System.out.println("Number of shots: " + nShots);
+        // System.out.println("Maximum proposal size: " + maximumProposalSize);
+        // System.out.println("Maximum different elements: " + maximumDifferentElements);
+        // System.out.println("Proposals:");
+        // for (int i = 0; i < nShots; i++) {
+        //     System.out.println("Proposal " + (i + 1) + ": " + proposals[i]);
+        // }
 
         LatticeAgreement.begin(parser);
 

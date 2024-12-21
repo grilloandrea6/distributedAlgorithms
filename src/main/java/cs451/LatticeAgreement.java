@@ -23,7 +23,7 @@ public class LatticeAgreement {
 
     public static void propose(Set<Integer> proposal) throws Exception {
         lastShotNumber++;
-        System.out.println("Proposal " + lastShotNumber + " received: " + proposal);
+        // System.out.println("Proposal " + lastShotNumber + " received: " + proposal);
         LatticePacket packet = new LatticePacket(lastShotNumber, LatticePacket.Type.PROPOSAL, 1 , proposal);
 
         LatticeInstance instance = instances.get(packet.shotNumber);
@@ -52,16 +52,13 @@ public class LatticeAgreement {
     public static void receivePacket(int senderID, byte[] data) throws Exception {
         LatticePacket packet = LatticePacket.deserialize(data);
 
-        System.out.println("Packet received from " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
+        // System.out.println("Packet received from " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
 
         synchronized(LatticeAgreement.class) {
             internalReceive(senderID, packet);
         }
     }
     public static void internalReceive(int senderID, LatticePacket packet) throws Exception {
-        // if(lastShotNumber < packet.shotNumber)
-        //     return;
-
         LatticeInstance instance = instances.get(packet.shotNumber);
         if(instance == null) {
             instance = new LatticeInstance();
@@ -80,7 +77,7 @@ public class LatticeAgreement {
                     packet.type = LatticePacket.Type.NACK;
                     packet.setValues = instance.values;
                 }
-                System.out.println("Sending packet to " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
+                // System.out.println("Sending packet to " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
                 PerfectLinks.perfectSend(packet.serialize(), senderID);
                 return;
             case ACK:
@@ -101,15 +98,15 @@ public class LatticeAgreement {
         }
 
         if(instance.active && (packet.getType() == LatticePacket.Type.ACK || packet.getType() == LatticePacket.Type.NACK)) {
-            System.out.print("Active and ack/nack received, checking. " + instance.ackCount + " " + instance.nackCount + " " + fPlusOne + " - ");
+            // System.out.print("Active and ack/nack received, checking. " + instance.ackCount + " " + instance.nackCount + " " + fPlusOne + " - ");
             if(instance.ackCount >= fPlusOne) {
-                System.out.println("Decided on " + instance.values);
+                // System.out.println("Decided on " + instance.values);
                 FIFOKeeper.addDecision(packet.shotNumber,instance.values);
                 instance.active = false;
             } 
             
             if(instance.nackCount > 0 && (instance.ackCount + instance.nackCount) >= fPlusOne) {
-                System.out.println("Incrementing proposal number and sending new proposal");
+                // System.out.println("Incrementing proposal number and sending new proposal");
                 instance.ackCount = 1;
                 instance.nackCount = 0;
                 instance.activeProposalNumber++;
