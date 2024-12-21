@@ -4,17 +4,24 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class LatticeInstance {
-    boolean active = true;
-    int ackCount = 0, nackCount = 0, activeProposalNumber = 1;
+    boolean active = false;
+    int ackCount = 0, nackCount = 0, activeProposalNumber = 0;
 
-    Set<Integer> acceptedValue = new HashSet<>(), // ToDo capire se serve istanziare
+    Set<Integer> acceptedValue = new HashSet<>(),
                  proposedValue; 
 
-    LatticeInstance(Set<Integer> proposedValue) {
-        this.proposedValue = proposedValue;
+    LatticeInstance() {
         ackCount = 0;
         nackCount = 0;
-        activeProposalNumber = 1;
+        activeProposalNumber = 0;
+    }
+
+    void addProposal(Set<Integer> proposedValue) {
+        active = true;
+        this.proposedValue = proposedValue;
+        activeProposalNumber++;
+        ackCount = 0;
+        nackCount = 0;
     }
 
 }

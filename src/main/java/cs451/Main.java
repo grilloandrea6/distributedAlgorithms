@@ -3,7 +3,6 @@ package cs451;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -17,7 +16,7 @@ public class Main {
     private static void handleSignal() {
         //immediately stop network packet processing
         running = false;
-        System.err.println("Stopping packet processing...");
+        // System.err.println("Stopping packet processing...");
         try {
             OutputLogger.end();
         } catch (IOException e) {

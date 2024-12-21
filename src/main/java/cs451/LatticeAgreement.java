@@ -1,6 +1,7 @@
 package cs451;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,9 +27,13 @@ public class LatticeAgreement {
         System.out.println("Proposal " + lastShotNumber + " received: " + proposal);
         LatticePacket packet = new LatticePacket(lastShotNumber, LatticePacket.Type.PROPOSAL, 1 , proposal);
 
-        LatticeInstance instance = new LatticeInstance(proposal);
+        LatticeInstance instance = instances.get(packet.shotNumber);
+        if(instance == null) {
+            instance = new LatticeInstance();
+            instances.put(packet.shotNumber, instance);
+        }
 
-        instances.put(lastShotNumber, instance);
+        instance.addProposal(proposal);
                 
         internalBroadcast(packet);
     }
@@ -37,11 +42,11 @@ public class LatticeAgreement {
         byte[] serialized = packet.serialize();
 
         for(int deliveryHost = 1; deliveryHost <= hostNumber; deliveryHost++) {
-            // do not send to myself
-            if(deliveryHost == myId) {
-                internalReceive(myId, packet);
-                continue;
-            }
+            // todo do not send to myself
+            // if(deliveryHost == myId) {
+            //     internalReceive(myId, packet);
+            //     continue;
+            // }
         
             PerfectLinks.perfectSend(serialized, deliveryHost);
         }
@@ -52,28 +57,32 @@ public class LatticeAgreement {
 
         System.out.println("Packet received from " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
 
-        internalReceive(senderID, packet);
+        synchronized(LatticeAgreement.class) {
+            internalReceive(senderID, packet);
+        }
     }
     public static void internalReceive(int senderID, LatticePacket packet) throws Exception {
-        if(lastShotNumber < packet.shotNumber)
-            return;
+        // if(lastShotNumber < packet.shotNumber)
+        //     return;
 
         LatticeInstance instance = instances.get(packet.shotNumber);
-
-        if(instance == null) // tanto non sarà attiva e sarà resettata al propose, quindi posso discard il packet, non creare una nuova istanza
-            return;
+        if(instance == null) {
+            instance = new LatticeInstance();
+            instances.put(packet.shotNumber, instance);
+        }
 
         switch (packet.getType()) {
             case PROPOSAL:
                 // if accepted_value ⊆ packet.getSetValue()
-                if(instance.acceptedValue.addAll(packet.setValues)) {
-                    // we added something, send nack
-                    packet.type = LatticePacket.Type.NACK;
-                    packet.setValues = instance.acceptedValue; // ToDo be careful - can anyone modify this set in the mean time
+                if(packet.setValues.containsAll(instance.acceptedValue)) {
+                    instance.acceptedValue.addAll(packet.setValues);
+                    packet.type = LatticePacket.Type.ACK;
+                    packet.setValues = null; // ToDo be careful - can anyone modify this set in the mean time
                 } else {
                     // no modification, send ack
+                    instance.acceptedValue.addAll(packet.setValues);
                     packet.type = LatticePacket.Type.ACK;
-                    packet.setValues = null;
+                    packet.setValues = instance.acceptedValue;
                 }
                 System.out.println("Sending packet to " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
                 PerfectLinks.perfectSend(packet.serialize(), senderID);
@@ -82,13 +91,12 @@ public class LatticeAgreement {
                 if(packet.integerValue == instance.activeProposalNumber)
                     instance.ackCount++;
 
-                // check if n+1 etcetc
-
                 break;
             case NACK:
-                if(packet.integerValue == instance.activeProposalNumber)
+                if(packet.integerValue == instance.activeProposalNumber) {
                     instance.nackCount++;
                     instance.proposedValue.addAll(packet.setValues);
+                }
 
                 break;
             default:
@@ -96,14 +104,15 @@ public class LatticeAgreement {
                 break;
         }
 
-        
         if(instance.active && (packet.getType() == LatticePacket.Type.ACK || packet.getType() == LatticePacket.Type.NACK)) {
-            System.out.print("Active and ack/nack received, checking. " + instance.ackCount + " " + instance.nackCount + " " + fPlusOne + " ");
-            if(instance.ackCount > fPlusOne) {
+            System.out.print("Active and ack/nack received, checking. " + instance.ackCount + " " + instance.nackCount + " " + fPlusOne + " - ");
+            if(instance.ackCount >= fPlusOne) {
                 System.out.println("Decided on " + instance.proposedValue);
-                OutputLogger.logDecide(instance.proposedValue);
+                FIFOKeeper.addDecision(packet.shotNumber,instance.proposedValue);
                 instance.active = false;
-            } else if(instance.nackCount > 0 && instance.ackCount + instance.nackCount > fPlusOne) {
+            } 
+            
+            if(instance.nackCount > 0 && (instance.ackCount + instance.nackCount) >= fPlusOne) {
                 System.out.println("Incrementing proposal number and sending new proposal");
                 instance.ackCount = 0;
                 instance.nackCount = 0;
@@ -112,7 +121,7 @@ public class LatticeAgreement {
                 packet.integerValue = instance.activeProposalNumber;
                 packet.setValues = instance.proposedValue;
                 internalBroadcast(packet);
-            } else System.out.println("");
+            }
         } 
          
 
