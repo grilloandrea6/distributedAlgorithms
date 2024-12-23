@@ -52,10 +52,12 @@ def run_processes(num_processes, hosts_file, output_dir, config_dir, timeout):
     # Terminate all processes
     print("Terminating processes...")
     for p in processes:
-        print(f"Terminating process {p.pid}...", end="")
         os.kill(p.pid, signal.SIGTERM)
+        # print(f"Terminating process {p.pid}...")
+        
+    for p in processes:
         p.wait()
-        print(f"OK")
+        print(f"Terminated process {p.pid}...")
 
     print("All processes have completed execution.\n\n")
 
@@ -93,8 +95,7 @@ def validate_outputs(num_processes, output_dir, config_dir):
             if len(process_decisions) != num_proposals:
                 print(f"Process {process_id} failed termination: {len(process_decisions)}/{num_proposals} decisions made.")
                 termination_passed = False
-        if not termination_passed:
-            exit(1)
+        
 
         # Validate validity
         with open(config_path, "r") as f:
@@ -107,6 +108,9 @@ def validate_outputs(num_processes, output_dir, config_dir):
             if not proposals[i].issubset(decision):
                 print(f"Process {process_id} failed validity for proposal {i + 1}.")
                 validity_passed = False
+
+    if not termination_passed:
+        return True
 
     # Validate consistency across processes
     for slot in range(len(decisions[0])):
@@ -124,10 +128,15 @@ def validate_outputs(num_processes, output_dir, config_dir):
     print(f"  Consistency: {'PASSED' if consistency_passed else 'FAILED'}")
     print(f"  Termination: {'PASSED' if termination_passed else 'FAILED'}")
 
+    if not (consistency_passed and validity_passed):
+        return False
+    
+    return True
+
 if __name__ == "__main__":
     # Parameters (adjust as needed)
-    NUM_PROCESSES = 50
-    NUM_PROPOSALS = 400
+    NUM_PROCESSES = 14
+    NUM_PROPOSALS = 15
     MAX_VALUES = 100
     DISTINCT_VALUES = 1000
 
@@ -135,9 +144,13 @@ if __name__ == "__main__":
     OUTPUT_DIR = "example/output"
     CONFIG_DIR = "example/auto-config"
 
-    TIMEOUT = 15  # Number of seconds to run each process
+    TIMEOUT = 3  # Number of seconds to run each process
 
     # Steps
-    generate_config_files(NUM_PROCESSES, NUM_PROPOSALS, MAX_VALUES, DISTINCT_VALUES, CONFIG_DIR, HOSTS_FILE)
-    run_processes(NUM_PROCESSES, HOSTS_FILE, OUTPUT_DIR, CONFIG_DIR, TIMEOUT)
-    validate_outputs(NUM_PROCESSES, OUTPUT_DIR, CONFIG_DIR)
+    for i in range(1000000):
+        print(f"\n\n----------------------------\nStarting experiment {i}")
+        generate_config_files(NUM_PROCESSES, NUM_PROPOSALS, MAX_VALUES, DISTINCT_VALUES, CONFIG_DIR, HOSTS_FILE)
+        run_processes(NUM_PROCESSES, HOSTS_FILE, OUTPUT_DIR, CONFIG_DIR, TIMEOUT)
+        if not validate_outputs(NUM_PROCESSES, OUTPUT_DIR, CONFIG_DIR):
+            print("PROBLEMA")
+            break

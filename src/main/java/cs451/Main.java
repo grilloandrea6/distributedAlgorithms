@@ -17,6 +17,12 @@ public class Main {
     private static void handleSignal() {
         //immediately stop network packet processing
         running = false;
+        if(!FIFOKeeper.pending.isEmpty()) {
+            System.err.println("pending messages: " + FIFOKeeper.pending.keySet().size());
+        }
+        if(!LatticeAgreement.instances.isEmpty()) {
+            System.err.println("open instances: " + LatticeAgreement.instances.keySet().size());
+        }
         // System.err.println("Stopping packet processing...");
         try {
             OutputLogger.end();

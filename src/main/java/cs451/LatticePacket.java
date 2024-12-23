@@ -5,7 +5,7 @@ import java.util.Set;
 
 public class LatticePacket {
     public enum Type {
-        ACK, NACK, PROPOSAL
+        ACK, NACK, PROPOSAL, CLEAN
     }
 
     int shotNumber;

@@ -9,6 +9,7 @@ public class LatticeInstance {
 
     Set<Integer> values = new HashSet<>(); 
     Set<Byte> receivedFrom = new HashSet<>();
+    Set<Byte> clean = new HashSet<>();
 
     LatticeInstance() {
         ackCount = 0;

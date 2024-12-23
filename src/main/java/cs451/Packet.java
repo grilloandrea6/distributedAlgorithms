@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 public class Packet {
     static private int idCounter = 0;
 
-    static private final Long INITIAL_TIMEOUT = 600L;
+    static private final Long INITIAL_TIMEOUT = 200L;
     
     int id, senderID, targetID;
     byte[] data;

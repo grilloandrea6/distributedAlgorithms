@@ -10,15 +10,17 @@ public class LatticeAgreement {
     static int lastShotNumber = 0;
 
     static final Map<Integer, LatticeInstance> instances = new HashMap<>(); 
-    // ToDo capire se è possibile togliere istances, quando sono finite? l'acceptor continua a girare anche dopo il decide...
 
-    static final int MAX_WINDOW_SIZE = 100;
+    static final int MAX_WINDOW_SIZE = 5;
     static int windowSize = 0;
     
     public static void begin(Parser p) {
         myId = p.myId();        
         hostNumber = p.hosts().size();
         fPlusOne = (hostNumber - 1) / 2 + 1;
+        if(hostNumber % 2 == 0) {
+            fPlusOne++;
+        }
         System.out.println("f+1: " + fPlusOne);
 
         PerfectLinks.begin(p);
@@ -26,11 +28,13 @@ public class LatticeAgreement {
 
     public static void propose(Set<Integer> proposal) throws Exception {
         lastShotNumber++;
-        // System.out.println("Proposal " + lastShotNumber + " received: " + proposal);
+        // System.err.println("Proposal " + lastShotNumber + " proposing: " + proposal);
         LatticePacket packet = new LatticePacket(lastShotNumber, LatticePacket.Type.PROPOSAL, 1 , proposal);
 
         synchronized(LatticeAgreement.class) {
-            while(windowSize >= MAX_WINDOW_SIZE) {
+            // System.err.println("is window open - shot number " + lastShotNumber + " - " + FIFOKeeper.pending.isEmpty());
+            while(windowSize >= MAX_WINDOW_SIZE && (FIFOKeeper.pending.isEmpty() || lastShotNumber - FIFOKeeper.pending.firstKey() > MAX_WINDOW_SIZE)) {
+                // System.err.println("Waiting for window to open - shot number " + lastShotNumber);
                 LatticeAgreement.class.wait();
             }
             windowSize++;
@@ -41,7 +45,8 @@ public class LatticeAgreement {
             instance = new LatticeInstance();
             instances.put(packet.shotNumber, instance);
         }
-        synchronized(instance) {
+        synchronized(instance) 
+        {
             instance.addProposal(proposal);
             instance.receivedFrom.add((byte) myId);
         }
@@ -71,7 +76,8 @@ public class LatticeAgreement {
             instance = new LatticeInstance();
             instances.put(packet.shotNumber, instance);
         }
-        synchronized(instance) {
+        synchronized(instance) 
+        {
             switch (packet.getType()) {
                 case PROPOSAL:
                     // if accepted_value ⊆ packet.getSetValue()
@@ -97,7 +103,13 @@ public class LatticeAgreement {
                     if(packet.integerValue == instance.activeProposalNumber) {
                         instance.nackCount++;
                         instance.values.addAll(packet.setValues);
-                        instance.receivedFrom.add((byte) senderID);
+                        }
+                    break;
+                case CLEAN:
+                    instance.clean.add((byte) senderID);
+                    if(instance.clean.size() == hostNumber) {
+                        instances.remove(packet.shotNumber);
+                        System.err.println("removing shot number " + packet.shotNumber);
                     }
                     break;
                 default:
@@ -106,7 +118,7 @@ public class LatticeAgreement {
             }
 
             if(instance.active && instance.receivedFrom.size() == hostNumber) {
-                System.out.print(".");
+                System.err.println("Received from all hosts, deciding shot number " + packet.shotNumber);
                 decide(packet.shotNumber, instance);
             }
 
@@ -137,6 +149,14 @@ public class LatticeAgreement {
         synchronized(LatticeAgreement.class) {
             windowSize--;
             LatticeAgreement.class.notify();
+        }
+
+        LatticePacket packet = new LatticePacket(shotNumber, LatticePacket.Type.CLEAN, 0, null);
+        internalBroadcast(packet);
+        instance.clean.add((byte) myId);
+        if(instance.clean.size() == hostNumber) {
+            instances.remove(shotNumber);
+            System.err.println("removing shot number " + packet.shotNumber);
         }
     }
 }
