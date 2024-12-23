@@ -43,6 +43,7 @@ public class LatticeAgreement {
         }
         synchronized(instance) {
             instance.addProposal(proposal);
+            instance.receivedFrom.add((byte) myId);
         }
                 
         internalBroadcast(packet);
@@ -85,7 +86,8 @@ public class LatticeAgreement {
                     }
                     // System.out.println("Sending packet to " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
                     PerfectLinks.perfectSend(packet.serialize(), senderID);
-                    return;
+                    instance.receivedFrom.add((byte) senderID);
+                    break;
                 case ACK:
                     if(packet.integerValue == instance.activeProposalNumber)
                         instance.ackCount++;
@@ -95,24 +97,23 @@ public class LatticeAgreement {
                     if(packet.integerValue == instance.activeProposalNumber) {
                         instance.nackCount++;
                         instance.values.addAll(packet.setValues);
+                        instance.receivedFrom.add((byte) senderID);
                     }
-
                     break;
                 default:
                     System.err.println("Unknown packet type");
                     break;
             }
 
+            if(instance.active && instance.receivedFrom.size() == hostNumber) {
+                System.out.print(".");
+                decide(packet.shotNumber, instance);
+            }
+
             if(instance.active && (packet.getType() == LatticePacket.Type.ACK || packet.getType() == LatticePacket.Type.NACK)) {
                 // System.out.print("Active and ack/nack received, checking. " + instance.ackCount + " " + instance.nackCount + " " + fPlusOne + " - ");
                 if(instance.ackCount >= fPlusOne) {
-                    // System.out.println("Decided on " + instance.values);
-                    FIFOKeeper.addDecision(packet.shotNumber,instance.values);
-                    instance.active = false;
-                    synchronized(LatticeAgreement.class) {
-                        windowSize--;
-                        LatticeAgreement.class.notify();
-                    }
+                    decide(packet.shotNumber, instance);
                 } 
                 
                 if(instance.nackCount > 0 && (instance.ackCount + instance.nackCount) >= fPlusOne) {
@@ -126,6 +127,16 @@ public class LatticeAgreement {
                     internalBroadcast(packet);
                 }
             } 
+        }
+    }
+
+    private static void decide(int shotNumber, LatticeInstance instance) throws Exception{
+        // System.out.println("Decided on " + instance.values);
+        FIFOKeeper.addDecision(shotNumber,instance.values);
+        instance.active = false;
+        synchronized(LatticeAgreement.class) {
+            windowSize--;
+            LatticeAgreement.class.notify();
         }
     }
 }

@@ -8,6 +8,7 @@ public class LatticeInstance {
     int ackCount = 0, nackCount = 0, activeProposalNumber = 0;
 
     Set<Integer> values = new HashSet<>(); 
+    Set<Byte> receivedFrom = new HashSet<>();
 
     LatticeInstance() {
         ackCount = 0;
