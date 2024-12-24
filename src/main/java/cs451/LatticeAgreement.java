@@ -23,42 +23,26 @@ public class LatticeAgreement {
         if(hostNumber % 2 == 0) {
             fPlusOne++;
         }
-        // System.out.println("f+1: " + fPlusOne);
 
         PerfectLinks.begin(p);
     }
 
     public static void propose(Set<Integer> proposal) throws Exception {
         lastShotNumber++;
-        LatticePacket packet = new LatticePacket(lastShotNumber, LatticePacket.Type.PROPOSAL, 1 , proposal);
-
         synchronized(LatticeAgreement.class) {
-            // System.err.println("is window open - shot number " + lastShotNumber + " - " + FIFOKeeper.pending.isEmpty());
             while(windowSize >= MAX_WINDOW_SIZE ) {
-                //|| ((!FIFOKeeper.pending.isEmpty()) && (lastShotNumber - FIFOKeeper.pending.firstKey()) > MAX_WINDOW_SIZE)) {
-                // System.err.println("Waiting for window to open - shot number " + lastShotNumber);
                 LatticeAgreement.class.wait();  
             }
             windowSize++;
         }            
-        // System.err.println("Broadcasting proposal " + lastShotNumber + " windowSize: " + windowSize + " pendingFirstKey: " + (FIFOKeeper.pending.isEmpty() ? "empty" : FIFOKeeper.pending.firstKey()));
-
-        // LatticeInstance instance;
-        // synchronized(lock){
-        //     instance = instances.get(packet.shotNumber);
-        //     if(instance == null) {
-        //         instance = new LatticeInstance();
-        //         instances.put(packet.shotNumber, instance);
-        //     }
-        // }
-        instances.putIfAbsent(packet.shotNumber, new LatticeInstance());
-        LatticeInstance instance = instances.get(packet.shotNumber);
+        instances.putIfAbsent(lastShotNumber, new LatticeInstance());
+        LatticeInstance instance = instances.get(lastShotNumber);
         synchronized(instance) 
         {
             instance.addProposal(proposal);
             instance.receivedFrom.add((byte) myId);
-        }
-                
+        }    
+        LatticePacket packet = new LatticePacket(lastShotNumber, LatticePacket.Type.PROPOSAL, instance.activeProposalNumber, proposal);       
         internalBroadcast(packet);
     }
 
@@ -79,18 +63,9 @@ public class LatticeAgreement {
 
         if(removedShots.contains(packet.shotNumber)) return;
 
-        // System.out.println("Packet received from " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
-
         instances.putIfAbsent(packet.shotNumber, new LatticeInstance());
         LatticeInstance instance = instances.get(packet.shotNumber);
-        // synchronized(lock){
-        //     LatticeInstance instance = instances.get(packet.shotNumber);
-        //     if(instance == null) {
-        //         System.err.println("Opening instance from packet - shot " + packet.shotNumber);
-        //         instance = new LatticeInstance();
-        //         instances.put(packet.shotNumber, instance);
-        //     }
-        // }
+
         synchronized(instance) 
         {
             switch (packet.getType()) {
@@ -105,7 +80,6 @@ public class LatticeAgreement {
                         packet.type = LatticePacket.Type.NACK;
                         packet.setValues = instance.acceptedValues;
                     }
-                    // System.out.println("Sending packet to " + senderID + ": " + packet.getType() + " " + packet.shotNumber + " " + packet.integerValue + " " + packet.setValues);
                     PerfectLinks.perfectSend(packet.serialize(), senderID);
                     instance.receivedFrom.add((byte) senderID);
                     break;
@@ -118,13 +92,12 @@ public class LatticeAgreement {
                     if(packet.integerValue == instance.activeProposalNumber) {
                         instance.nackCount++;
                         instance.proposedValues.addAll(packet.setValues);
-                        }
+                    }
                     break;
                 case CLEAN:
                     instance.clean.add((byte) senderID);
                     if(instance.clean.size() == hostNumber) {
                         instances.remove(packet.shotNumber);
-                        // System.err.println("removing shot number " + packet.shotNumber);
                         removedShots.add(packet.shotNumber);
                     }
                     break;
@@ -167,7 +140,6 @@ public class LatticeAgreement {
     }
 
     private static void decide(int shotNumber, LatticeInstance instance) throws Exception{
-        // System.err.println("Decided for shot " + shotNumber);
         FIFOKeeper.addDecision(shotNumber,instance.proposedValues);
         instance.active = false;
         synchronized(LatticeAgreement.class) {
@@ -180,7 +152,6 @@ public class LatticeAgreement {
         instance.clean.add((byte) myId);
         if(instance.clean.size() == hostNumber) {
             instances.remove(shotNumber);
-            // System.err.println("removing shot number " + packet.shotNumber);
         }
     }
 }

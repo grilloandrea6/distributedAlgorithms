@@ -6,9 +6,11 @@ public class AckKeeper {
     private int maximumInOrderAck = -1;
     private TreeSet<Integer> acks = new TreeSet<>();
 
-    // static int maxAcksSize = 0;
-
     public AckKeeper() {}
+
+    public AckKeeper(int maximumInOrderAck) {
+        this.maximumInOrderAck = maximumInOrderAck;
+    }
     
     public boolean addAck(int ack) {
         if (isAcked(ack)) {
@@ -20,11 +22,6 @@ public class AckKeeper {
             if(!acks.isEmpty()) removeAcks();
         } else this.acks.add(ack);
 
-        // maxAcksSize = Math.max(maxAcksSize, this.acks.size());
-        // if(acks.size() > maxAcksSize) {
-        //     maxAcksSize = acks.size();
-        // }
-        
         return true;
     }
 
