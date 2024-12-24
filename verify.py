@@ -110,7 +110,7 @@ def validate_outputs(num_processes, output_dir, config_dir):
                 validity_passed = False
 
     if not termination_passed:
-        return True
+        return False
 
     # Validate consistency across processes
     for slot in range(len(decisions[0])):
@@ -120,6 +120,8 @@ def validate_outputs(num_processes, output_dir, config_dir):
             for j in range(i + 1, len(slot_decisions)):
                 if not (slot_decisions[i].issubset(slot_decisions[j]) or slot_decisions[j].issubset(slot_decisions[i])):
                     print(f"Consistency violated between processes {i + 1} and {j + 1} for slot {slot + 1}.")
+                    print(f"  Process {i + 1}: {slot_decisions[i]}")
+                    print(f"  Process {j + 1}: {slot_decisions[j]}")
                     consistency_passed = False
 
     # Print summary
@@ -128,15 +130,15 @@ def validate_outputs(num_processes, output_dir, config_dir):
     print(f"  Consistency: {'PASSED' if consistency_passed else 'FAILED'}")
     print(f"  Termination: {'PASSED' if termination_passed else 'FAILED'}")
 
-    if not (consistency_passed and validity_passed):
+    if not (consistency_passed and validity_passed and termination_passed):
         return False
     
     return True
 
 if __name__ == "__main__":
     # Parameters (adjust as needed)
-    NUM_PROCESSES = 14
-    NUM_PROPOSALS = 15
+    NUM_PROCESSES = 25
+    NUM_PROPOSALS = 1250
     MAX_VALUES = 100
     DISTINCT_VALUES = 1000
 
@@ -144,7 +146,7 @@ if __name__ == "__main__":
     OUTPUT_DIR = "example/output"
     CONFIG_DIR = "example/auto-config"
 
-    TIMEOUT = 3  # Number of seconds to run each process
+    TIMEOUT = 50  # Number of seconds to run each process
 
     # Steps
     for i in range(1000000):
