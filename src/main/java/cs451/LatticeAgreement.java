@@ -34,10 +34,10 @@ public class LatticeAgreement {
 
         synchronized(LatticeAgreement.class) {
             // System.err.println("is window open - shot number " + lastShotNumber + " - " + FIFOKeeper.pending.isEmpty());
-            while(windowSize >= MAX_WINDOW_SIZE ||
-                ((!FIFOKeeper.pending.isEmpty()) && (lastShotNumber - FIFOKeeper.pending.firstKey()) > MAX_WINDOW_SIZE)) {
+            while(windowSize >= MAX_WINDOW_SIZE ) {
+                //|| ((!FIFOKeeper.pending.isEmpty()) && (lastShotNumber - FIFOKeeper.pending.firstKey()) > MAX_WINDOW_SIZE)) {
                 // System.err.println("Waiting for window to open - shot number " + lastShotNumber);
-                LatticeAgreement.class.wait();
+                LatticeAgreement.class.wait();  
             }
             windowSize++;
         }            
