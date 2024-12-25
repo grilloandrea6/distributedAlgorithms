@@ -13,7 +13,7 @@ public class PerfectLinks {
     private static ConcurrentLinkedQueue<Packet>[] sendingOverflow;
     private static AckKeeper[] ackKeeperList;
 
-    public final static int WINDOW_MAX_SIZE = 5; // ToDo mmmmm
+    private static int WINDOW_MAX_SIZE;
 
     private static int nHosts;
 
@@ -22,7 +22,17 @@ public class PerfectLinks {
     static void begin(Parser p) {
         myId = p.myId();
 
-        nHosts = parser.hosts().size();
+        nHosts = p.hosts().size();
+
+        if (nHosts <= 5) {
+            WINDOW_MAX_SIZE = 100;
+        } else if (nHosts <= 10) {
+            WINDOW_MAX_SIZE = 50;
+        } else if (nHosts <= 15) {
+            WINDOW_MAX_SIZE = 20;
+        } else {
+            WINDOW_MAX_SIZE = 5;
+        }
 
         waitingForAck = new PriorityBlockingQueue<Packet>(nHosts * WINDOW_MAX_SIZE, (p1, p2) -> p1.timeout.compareTo(p2.timeout));
 
