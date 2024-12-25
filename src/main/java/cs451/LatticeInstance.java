@@ -1,5 +1,6 @@
 package cs451;
 
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -7,10 +8,10 @@ public class LatticeInstance {
     boolean active = false;
     int ackCount = 0, nackCount = 0, activeProposalNumber = 0;
 
-    Set<Integer> proposedValues = new HashSet<>(); 
-    Set<Integer> acceptedValues = new HashSet<>(); 
+    final Set<Integer> proposedValues = new HashSet<>(); 
+    final Set<Integer> acceptedValues = new HashSet<>(); 
 
-    Set<Byte> receivedFrom = new HashSet<>();
+    final BitSet receivedFrom = new BitSet(LatticeAgreement.hostNumber);
     int clean = 0;
 
     LatticeInstance() {

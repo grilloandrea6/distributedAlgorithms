@@ -40,7 +40,7 @@ public class LatticeAgreement {
         synchronized(instance) 
         {
             instance.addProposal(proposal);
-            instance.receivedFrom.add((byte) myId);
+            instance.receivedFrom.set(myId);
         }    
         LatticePacket packet = new LatticePacket(lastShotNumber, LatticePacket.Type.PROPOSAL, instance.activeProposalNumber, proposal);       
         internalBroadcast(packet);
@@ -81,7 +81,7 @@ public class LatticeAgreement {
                         packet.setValues = instance.acceptedValues;
                     }
                     PerfectLinks.perfectSend(packet.serialize(), senderID);
-                    instance.receivedFrom.add((byte) senderID);
+                    instance.receivedFrom.set(senderID);
                     break;
                 case ACK:
                     if(packet.integerValue == instance.activeProposalNumber)
@@ -105,7 +105,7 @@ public class LatticeAgreement {
                     break;
             }
 
-            if(instance.active && instance.receivedFrom.size() == hostNumber) {
+            if(instance.active && instance.receivedFrom.cardinality() == hostNumber) {
                 // System.err.println("Received from all hosts, deciding shot number " + packet.shotNumber);
                 instance.proposedValues.addAll(instance.acceptedValues);
                 decide(packet.shotNumber, instance);
