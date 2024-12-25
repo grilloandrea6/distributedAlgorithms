@@ -6,7 +6,7 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class PerfectLinks {
-    static Parser parser;
+    static int myId;
 
     private static AtomicInteger[] windowSize;
     private static LockFreeRingBuffer<Packet>[] sendingQueue;
@@ -20,7 +20,7 @@ public class PerfectLinks {
     private static PriorityBlockingQueue<Packet> waitingForAck;
 
     static void begin(Parser p) {
-        parser = p;
+        myId = p.myId();
 
         nHosts = parser.hosts().size();
 
@@ -39,7 +39,7 @@ public class PerfectLinks {
         }
 
         try {
-            NetworkInterface.begin(parser);
+            NetworkInterface.begin(p);
         } catch (SocketException e) {
             System.err.println("Error starting NetworkInterface: " + e.getMessage());
         }
@@ -74,7 +74,7 @@ public class PerfectLinks {
     }
 
     public static void perfectSend(byte[] data, int deliveryHost) throws InterruptedException {   
-        Packet p = new Packet(data, parser.myId(), deliveryHost);
+        Packet p = new Packet(data, myId, deliveryHost);
 
         if (!sendingQueue[deliveryHost - 1].offer(p)) {
             sendingOverflow[deliveryHost - 1].add(p);

@@ -8,7 +8,6 @@ import java.net.SocketException;
 
 
 public class NetworkInterface {
-    public static Parser parser;
 
     private static DatagramSocket socketReceive, socketSend;
 
@@ -16,9 +15,7 @@ public class NetworkInterface {
 
     private static int size;
 
-    public static void begin(Parser p) throws SocketException {
-        parser = p;
-
+    public static void begin(Parser parser) throws SocketException {
         int port = parser.hosts().get(parser.myId() - 1).getPort();
 
         size = 18 + 4 * Main.maximumDifferentElements; //ToDo if i change packet format

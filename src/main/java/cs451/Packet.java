@@ -52,7 +52,7 @@ public class Packet {
         packet.id = buffer.getInt();                         // 4 bytes
         packet.senderID = buffer.getInt();                   // 4 bytes
         packet.isAckPacket = buffer.get() == 1;              // 1 byte for boolean
-        packet.targetID = NetworkInterface.parser.myId();
+        packet.targetID = PerfectLinks.myId;
         
         for(int i = 0; i < length - 9; i++) {
             packet.data[i] = buffer.get();
@@ -65,7 +65,7 @@ public class Packet {
         Packet packet = new Packet();
         packet.isAckPacket = true;
         packet.data = NetworkInterface.intToBytes(p.id);
-        packet.senderID = NetworkInterface.parser.myId();
+        packet.senderID = PerfectLinks.myId;
         packet.targetID = p.senderID;
         return packet;
     }
