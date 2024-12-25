@@ -109,6 +109,7 @@ def validate_outputs(num_processes, output_dir, config_dir):
                 print(f"Process {process_id} failed validity for proposal {i + 1}.")
                 validity_passed = False
 
+    # If termination failed, cannot check consistency
     if not termination_passed:
         return False
 
@@ -130,15 +131,15 @@ def validate_outputs(num_processes, output_dir, config_dir):
     print(f"  Consistency: {'PASSED' if consistency_passed else 'FAILED'}")
     print(f"  Termination: {'PASSED' if termination_passed else 'FAILED'}")
 
-    if not (consistency_passed and validity_passed and termination_passed):
+    if not (consistency_passed and validity_passed):
         return False
     
     return True
 
 if __name__ == "__main__":
     # Parameters (adjust as needed)
-    NUM_PROCESSES = 25
-    NUM_PROPOSALS = 1250
+    NUM_PROCESSES = 3
+    NUM_PROPOSALS = 50000
     MAX_VALUES = 100
     DISTINCT_VALUES = 1000
 
@@ -146,7 +147,7 @@ if __name__ == "__main__":
     OUTPUT_DIR = "example/output"
     CONFIG_DIR = "example/auto-config"
 
-    TIMEOUT = 50  # Number of seconds to run each process
+    TIMEOUT = 10  # Number of seconds to run each process
 
     # Steps
     for i in range(1000000):
@@ -154,5 +155,5 @@ if __name__ == "__main__":
         generate_config_files(NUM_PROCESSES, NUM_PROPOSALS, MAX_VALUES, DISTINCT_VALUES, CONFIG_DIR, HOSTS_FILE)
         run_processes(NUM_PROCESSES, HOSTS_FILE, OUTPUT_DIR, CONFIG_DIR, TIMEOUT)
         if not validate_outputs(NUM_PROCESSES, OUTPUT_DIR, CONFIG_DIR):
-            print("PROBLEMA")
+            print(" - - - PROBLEM - - -")
             break
