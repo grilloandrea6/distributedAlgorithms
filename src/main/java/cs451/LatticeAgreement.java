@@ -14,7 +14,7 @@ public class LatticeAgreement {
     static final int MAX_WINDOW_SIZE = 150;
     static int windowSize = 0;
 
-    static Set<Integer> removedShots = ConcurrentHashMap.newKeySet();
+    static AckKeeper removedShots = new AckKeeper(0);
     
     public static void begin(Parser p) {
         myId = p.myId();        
@@ -61,7 +61,7 @@ public class LatticeAgreement {
     public static void receivePacket(int senderID, byte[] data) throws Exception {
         LatticePacket packet = LatticePacket.deserialize(data);
 
-        if(removedShots.contains(packet.shotNumber)) return;
+        if(removedShots.isAcked(packet.shotNumber)) return;
 
         instances.putIfAbsent(packet.shotNumber, new LatticeInstance());
         LatticeInstance instance = instances.get(packet.shotNumber);
@@ -95,10 +95,9 @@ public class LatticeAgreement {
                     }
                     break;
                 case CLEAN:
-                    instance.clean.add((byte) senderID);
-                    if(instance.clean.size() == hostNumber) {
+                    if(++instance.clean == hostNumber) {
                         instances.remove(packet.shotNumber);
-                        removedShots.add(packet.shotNumber);
+                        removedShots.addAck(packet.shotNumber);
                     }
                     break;
                 default:
@@ -149,9 +148,9 @@ public class LatticeAgreement {
 
         LatticePacket packet = new LatticePacket(shotNumber, LatticePacket.Type.CLEAN, 0, null);
         internalBroadcast(packet);
-        instance.clean.add((byte) myId);
-        if(instance.clean.size() == hostNumber) {
-            instances.remove(shotNumber);
+        if(++instance.clean == hostNumber) {
+            instances.remove(packet.shotNumber);
+            removedShots.addAck(packet.shotNumber);
         }
     }
 }
