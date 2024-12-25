@@ -3,9 +3,9 @@ package cs451;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Set;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Main {
@@ -72,7 +72,6 @@ public class Main {
         // System.out.println("Doing some initialization\n");
 
         int nShots, maximumProposalSize;
-        Set<Integer>[] proposals;
         try {
             OutputLogger.begin(parser);
         } catch (IOException e) {
@@ -82,43 +81,41 @@ public class Main {
 
         // System.out.println("Reading config file...");
         // System.out.println("I am host " + parser.myId() + ".");
+        BufferedReader configReader;
         try {
-            BufferedReader configReader = new BufferedReader(new FileReader(parser.config()));
+            configReader = new BufferedReader(new FileReader(parser.config()));
             String config[] = configReader.readLine().split("\\s");
             nShots = Integer.parseInt(config[0]);
             maximumProposalSize = Integer.parseInt(config[1]);
             maximumDifferentElements = Integer.parseInt(config[2]);
-            proposals = new HashSet[nShots];
-
-            for(int i = 0; i < nShots; i++) {
-                String[] line = configReader.readLine().split("\\s");
-                proposals[i] = Arrays.stream(line).map((String s) -> Integer.parseInt(s)).collect(Collectors.toSet());
-            }
-            configReader.close();
         } catch (IOException e) {
             System.err.println("Error reading config file: " + e.getMessage());
             return;
         }
 
-        // System.out.println("Number of shots: " + nShots);
-        // System.out.println("Maximum proposal size: " + maximumProposalSize);
-        // System.out.println("Maximum different elements: " + maximumDifferentElements);
-        // System.out.println("Proposals:");
-        // for (int i = 0; i < nShots; i++) {
-        //     System.out.println("Proposal " + (i + 1) + ": " + proposals[i]);
-        // }
-
         LatticeAgreement.begin(parser);
 
+        try{
+            for(int i = 0; i < nShots; i++) {
+                    String[] line = configReader.readLine().split("\\s+");
+                    Set<Integer> proposal = new HashSet<>(line.length);
+                    for (String s : line) {
+                        proposal.add(Integer.parseInt(s));
+                    }
+                    LatticeAgreement.propose(proposal);
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading config file: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Error proposing: " + e.getMessage());
+        }
 
         try {
-            for(int i = 0; i < nShots; i++) {
-                LatticeAgreement.propose(proposals[i]);
-            }
-        } catch (Exception e) {
+            configReader.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
-       
+        
         // After a process finishes broadcasting,
         // it waits forever for the delivery of messages.
         while (true) {
