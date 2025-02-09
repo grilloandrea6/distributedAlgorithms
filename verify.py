@@ -138,10 +138,10 @@ def validate_outputs(num_processes, output_dir, config_dir):
 
 if __name__ == "__main__":
     # Parameters (adjust as needed)
-    NUM_PROCESSES = 3
-    NUM_PROPOSALS = 50000
-    MAX_VALUES = 100
-    DISTINCT_VALUES = 1000
+    NUM_PROCESSES = 30
+    NUM_PROPOSALS = 300
+    MAX_VALUES = 20
+    DISTINCT_VALUES = 100
 
     HOSTS_FILE = "example/hosts"  # Path to the hosts file
     OUTPUT_DIR = "example/output"
@@ -149,11 +149,8 @@ if __name__ == "__main__":
 
     TIMEOUT = 10  # Number of seconds to run each process
 
-    # Steps
-    for i in range(1000000):
-        print(f"\n\n----------------------------\nStarting experiment {i}")
-        generate_config_files(NUM_PROCESSES, NUM_PROPOSALS, MAX_VALUES, DISTINCT_VALUES, CONFIG_DIR, HOSTS_FILE)
-        run_processes(NUM_PROCESSES, HOSTS_FILE, OUTPUT_DIR, CONFIG_DIR, TIMEOUT)
-        if not validate_outputs(NUM_PROCESSES, OUTPUT_DIR, CONFIG_DIR):
-            print(" - - - PROBLEM - - -")
-            break
+    print(f"\n\n----------------------------\nStarting experiment")
+    generate_config_files(NUM_PROCESSES, NUM_PROPOSALS, MAX_VALUES, DISTINCT_VALUES, CONFIG_DIR, HOSTS_FILE)
+    run_processes(NUM_PROCESSES, HOSTS_FILE, OUTPUT_DIR, CONFIG_DIR, TIMEOUT)
+    if not validate_outputs(NUM_PROCESSES, OUTPUT_DIR, CONFIG_DIR):
+        print(" - - - PROBLEM - - -")
