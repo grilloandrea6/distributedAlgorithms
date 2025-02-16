@@ -10,15 +10,15 @@ The main goal was to implement key communication primitives for decentralized sy
 
 Check out the [project description](./ProjectDescription.pdf) for more details.
 
-## Evaluation Criteria
+## Grade Obtained
 The project was evaluated based on the following criteria:
 - **Correctness:** The implementation should satisfy the properties of the abstraction. The implementation should be robust to failures and asynchrony.
-  
+
 - **Performance:** The implementation should be efficient. 
 
 The correctness of the implementation gives a passing grade, while the performance gives the remaining grade. 
 
-The mark obtained for this project was **X.X/6.0**. *(still waiting for the results :') )*.
+The grade obtained for this project was **6.0/6.0**.
 
 ## System Model
 
@@ -38,7 +38,7 @@ reordered.
 **Interface:**
 - send($p$: Process, $m$: Message) - Sends a message $m$ to process $p$.
 - deliver($p$: Process, $m$: Message) - Delivers a message $m$ from process $p$.
-  
+
 
 **Properties:**
 - **Validity:** If a correct process sends a message to another correct process, it will eventually be delivered.
